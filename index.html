@@ -37,7 +37,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.4;
-  padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 160px)}
+  padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 40px)}
 body.noauth{padding-bottom:calc(env(safe-area-inset-bottom) + 40px)}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
 header{padding:18px 0 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -46,7 +46,7 @@ h1 span{color:var(--accent)}
 .sub{color:var(--muted);font-size:14px;margin-top:4px}
 .hbtns{display:flex;gap:6px}
 nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin:8px 0 16px;position:sticky;top:6px;z-index:5}
-nav button{flex:1;border:0;background:transparent;color:var(--muted);font:600 14px var(--font-body);padding:10px 4px;border-radius:9px;cursor:pointer}
+nav button{flex:1;border:0;background:transparent;color:var(--muted);font:600 13px var(--font-body);padding:10px 4px;border-radius:9px;cursor:pointer}
 nav button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
@@ -136,16 +136,27 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .plist .pe{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
 .plist .pe:first-of-type{border-top:0}
 .plist .pe span:last-child{color:var(--muted);white-space:nowrap;font-size:14px;font-variant-numeric:tabular-nums}
-/* Timer */
-.tbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--navy);color:#fff;border-top:3px solid var(--accent);padding:12px 16px calc(env(safe-area-inset-bottom) + 34px);box-shadow:0 -6px 20px rgba(0,0,0,.18)}
-.tbar .tmotto{max-width:560px;margin:0 auto 10px;font-family:var(--font-display);font-size:24px;line-height:1.1;font-weight:700;text-align:right;color:var(--accent);min-height:26px;text-wrap:balance}
+/* Scheda: giornate richiudibili e tasto rapido */
+.gh{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;margin:14px 0 8px;font-family:var(--font-display);font-size:20px;color:var(--ink);cursor:pointer;text-align:left}
+.gh b{display:inline-block;background:var(--navy);color:#fff;border-radius:6px;padding:1px 9px;font-weight:700}
+.gh .cnt{margin-left:auto;font:500 13px var(--font-body);color:var(--muted);white-space:nowrap}
+.gh .cnt i{font-style:normal;font-size:16px;margin-left:4px}
+.exw{display:flex;gap:6px;margin-bottom:8px}
+.exw .ex{margin-bottom:0;flex:1;min-width:0}
+.qk{flex:0 0 52px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;font:700 22px var(--font-body);cursor:pointer}
+.qk.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.exa{display:flex;gap:8px;margin:4px 0 6px}
+.exa .btn{flex:1}
+/* Timer (tab Pausa, per ora nascosto) */
+.tbar{position:relative;overflow:hidden;background:var(--navy);color:#fff;border-radius:14px;border-top:3px solid var(--accent);padding:26px 16px 22px;text-align:center}
+.tbar .tlabel{font-family:var(--font-display);font-size:64px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbar .tlabel small{font-family:var(--font-body);font-size:16px;opacity:.7;margin-left:4px}
+.tbar .tin{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:18px}
+.tbar .tmotto{margin-top:20px;font-family:var(--font-display);font-size:26px;line-height:1.15;font-weight:700;color:var(--accent);min-height:60px;text-wrap:balance}
 .tbar[data-state="done"] .tmotto{color:var(--accent-ink)}
-.tbar .tin{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:8px}
-.tbar .tlabel{flex:1;text-align:right;font-family:var(--font-display);font-size:30px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tbar .tlabel small{font-family:var(--font-body);font-size:13px;opacity:.7;margin-left:3px}
-.tbar button{border:0;border-radius:999px;font:600 16px var(--font-body);padding:10px 14px;min-width:46px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
+.tbar button{border:0;border-radius:999px;font:600 18px var(--font-body);padding:12px 20px;min-width:64px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .tbar button.on{background:var(--accent);color:var(--accent-ink)}
-.tbar #t-stop{background:transparent;border:1px solid rgba(255,255,255,.35);padding:9px 12px;font-size:14px}
+.tbar #t-stop{background:transparent;border:1px solid rgba(255,255,255,.35);padding:11px 16px;font-size:15px}
 .tbar #t-stop[hidden]{display:none}
 .tbar .tprog{position:absolute;left:0;right:0;top:0;height:3px}
 .tbar .tprog i{display:block;height:100%;width:0;background:var(--accent)}
@@ -178,7 +189,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
       <input id="a-code" autocapitalize="none" autocomplete="off">
       <label class="l" for="a-tpl">Scheda di partenza</label>
       <select id="a-tpl">
-        <option value="sample">Scheda di esempio (Full Body A, B, C)</option>
+        <option value="sample">Scheda di esempio (divisa per gruppo muscolare)</option>
         <option value="empty">Scheda vuota, la creo io</option>
       </select>
     </div>
@@ -201,35 +212,38 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     </div>
   </header>
   <nav role="tablist">
-    <button role="tab" id="t-ex" aria-selected="true" data-tab="ex">Esercizi</button>
+    <button role="tab" id="t-ex" aria-selected="true" data-tab="ex">Scheda</button>
     <button role="tab" id="t-ses" aria-selected="false" data-tab="ses">Sessioni</button>
     <button role="tab" id="t-fr" aria-selected="false" data-tab="fr">Amici</button>
-    <button role="tab" id="t-sc" aria-selected="false" data-tab="sc">Scheda</button>
+    <button role="tab" id="t-sc" aria-selected="false" data-tab="sc" hidden>Modifica</button>
+    <button role="tab" id="t-tm" aria-selected="false" data-tab="tm" hidden>Pausa</button>
   </nav>
 
   <section id="v-ex">
     <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin-bottom:4px">
+    <div class="exa"><button class="btn small" type="button" data-exa="wizard">Genera scheda</button><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button></div>
     <div id="ex-list"></div>
   </section>
   <section id="v-ses" hidden><div id="ses-list"></div></section>
   <section id="v-fr" hidden></section>
   <section id="v-sc" hidden></section>
+  <section id="v-tm" hidden>
+    <div class="tbar" id="tbar" data-state="idle">
+      <div class="tprog"><i id="tprog"></i></div>
+      <div class="tlabel" id="tlabel">Pausa</div>
+      <div class="tin">
+        <button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button>
+        <button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button>
+        <button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button>
+        <button type="button" id="t-stop" hidden>Stop</button>
+      </div>
+      <div class="tmotto" id="tmotto"></div>
+    </div>
+  </section>
   <div class="status" id="status"></div>
 </div>
 
 <div class="overlay" id="ov" hidden><div class="sheet" id="sheet"></div></div>
-
-<div class="tbar" id="tbar" data-state="idle" hidden>
-  <div class="tprog"><i id="tprog"></i></div>
-  <div class="tmotto" id="tmotto"></div>
-  <div class="tin">
-    <button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button>
-    <button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button>
-    <button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button>
-    <button type="button" id="t-stop" hidden>Stop</button>
-    <div class="tlabel" id="tlabel">Pausa</div>
-  </div>
-</div>
 
 <script>
 (function(){
@@ -314,6 +328,7 @@ function schedaStats(sch){
     g.ex.forEach(function(e){
       var s=+e.s>0?+e.s:3;
       var rec=(e.rec!==undefined&&e.rec!==""&&e.rec!==null&&isFinite(+e.rec))?+e.rec:75;
+      rec=Math.max(rec,60); // pausa minima 1 minuto tra le serie
       var lb=libOf(e.n);
       var lv=+e.lv||(lb?lb.lv:1.5);
       ex++;sets+=s;lvSum+=lv;m+=s*(45+rec)/60;
@@ -439,9 +454,10 @@ function genScheda(p){
 /* ====== Scheda di esempio ====== */
 function sampleScheda(){
   var d=[
-    ["Full Body A",[["Leg extension",3,"12",60],["Hack squat",3,"8-10",120],["Pushdown tricipiti con corda",3,"12",60],["Panca inclinata con manubri",3,"8-10",90],["Lat machine",3,"10-12",90],["Alzate laterali",3,"12-15",60]]],
-    ["Full Body B",[["Leg curl",3,"10-12",60],["Leg press",3,"10",120],["Pulley basso",3,"10-12",90],["Chest press",3,"10",90],["Curl bicipiti con manubri",3,"12",60],["Crunch ai cavi",3,"15",60]]],
-    ["Full Body C",[["Stacchi rumeni con manubri",3,"10",120],["Affondi bulgari",3,"10",90],["Shoulder press",3,"10",90],["Lat machine presa neutra",3,"10",90],["Pec deck",3,"12",60],["Curl bicipiti ai cavi",3,"12",60]]]
+    ["Petto e tricipiti",[["Chest press",3,"10",90],["Panca inclinata con manubri",3,"8-10",90],["Pec deck",3,"12",60],["Pushdown tricipiti con corda",3,"12",60]]],
+    ["Schiena e bicipiti",[["Lat machine",3,"10-12",90],["Pulley basso",3,"10-12",90],["Low row alla macchina",3,"10-12",90],["Curl bicipiti con manubri",3,"12",60]]],
+    ["Spalle e addome",[["Shoulder press",3,"10",90],["Alzate laterali",3,"12-15",60],["Reverse pec deck",3,"12-15",60],["Crunch ai cavi",3,"15",60]]],
+    ["Gambe",[["Leg press",3,"10",120],["Leg extension",3,"12",60],["Leg curl",3,"10-12",60],["Stacchi rumeni con manubri",3,"10",120],["Calf in piedi",3,"15",60]]]
   ];
   return d.map(function(g){
     return {id:uid(),t:g[0],ex:g[1].map(function(r){
@@ -485,13 +501,13 @@ function loadState(){
 /* ====== Accesso ====== */
 function showAuth(){
   document.body.classList.add("noauth");
-  $("auth").hidden=false;$("app").hidden=true;$("tbar").hidden=true;
+  $("auth").hidden=false;$("app").hidden=true;
   $("api-setup").hidden=!!API_URL;
   if(!API_URL) $("api-url").value=lsGet("dpc-api")||"";
 }
 function showApp(){
   document.body.classList.remove("noauth");
-  $("auth").hidden=true;$("app").hidden=false;$("tbar").hidden=false;
+  $("auth").hidden=true;$("app").hidden=false;
   $("who").textContent="Profilo di "+S.me;
 }
 function setMode(m){
@@ -580,12 +596,13 @@ function saveMyScheda(scheda,renames){
 }
 
 /* ====== Tab ====== */
-var TABS=["ex","ses","fr","sc"];
+var TABS=["ex","ses","fr","sc"]; // tab "tm" (Pausa) tolto per ora: per rimetterlo aggiungi "tm" qui e togli hidden dal bottone t-tm
 function setTab(t){
   TABS.forEach(function(k){
     $("v-"+k).hidden=(k!==t);
     $("t-"+k).setAttribute("aria-selected",k===t?"true":"false");
   });
+  if(t==="tm"&&!$("tmotto").textContent)nextMotto();
   renderAll();
   window.scrollTo(0,0);
 }
@@ -602,24 +619,29 @@ function renderAll(){
 }
 
 /* ====== Esercizi ====== */
+var openG={};
 function exRow(e){
   var name=e.n,h=history(S.me,name),pr=rx(e);
-  if(!h.length) return '<button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+'nessun dato, tocca per aggiungere</div></div><div class="kg">—</div></button>';
+  if(!h.length) return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+'nessun dato, tocca per aggiungere</div></div><div class="kg">—</div></button></div>';
   var l=h[h.length-1];
   var d=h.length>1?deltaHTML(l.kg-h[h.length-2].kg):'<span class="d eq">primo dato</span>';
-  return '<button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+h.length+(h.length===1?" volta":" volte")+' · '+dshort(l.d)+'</div></div><div class="kg">'+fmt(l.kg)+' <small>kg</small><div>'+d+'</div></div></button>';
+  var done=(l.d===iso(new Date()));
+  return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+h.length+(h.length===1?" volta":" volte")+' · '+dshort(l.d)+'</div></div><div class="kg">'+fmt(l.kg)+' <small>kg</small><div>'+d+'</div></div></button>'+
+    '<button class="qk'+(done?" on":"")+'" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi lo stesso peso ('+fmt(l.kg)+' kg)">✓</button></div>';
 }
 function renderEx(){
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
   var html="";
-  sch.forEach(function(g){
+  sch.forEach(function(g,gi){
     var list=g.ex.filter(function(e){return !q||norm(e.n).indexOf(q)>-1;});
     if(!list.length) return;
-    html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> '+esc(g.t||"Gruppo")+'</div>'+list.map(exRow).join("");
+    var key=g.id||("i"+gi),open=!!q||!!openG[key];
+    html+='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span>'+esc(g.t||"Gruppo")+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
+    if(open) html+=list.map(exRow).join("");
   });
   if(!html){
-    html=sch.length?'<div class="empty">Nessun esercizio trovato.</div>':'<div class="empty">La tua scheda è vuota.<br>Creala nella scheda Scheda, anche con la procedura guidata.</div>';
+    html=sch.length?'<div class="empty">Nessun esercizio trovato.</div>':'<div class="empty">La tua scheda è vuota.<br>Toccando Genera scheda ti propongo una scheda, oppure con Modifica scheda la scrivi tu.</div>';
   }
   $("ex-list").innerHTML=html;
 }
@@ -948,10 +970,14 @@ function copyFriendScheda(){
 
 /* ====== Scheda (editor) ====== */
 var draft=null;
+var backConfirm=false;
+function schedaSig(sch){
+  return JSON.stringify((sch||[]).map(function(g){return [String(g.t),(g.ex||[]).map(function(e){return [String(e.n),String(e.s===undefined?"":e.s),String(e.r===undefined?"":e.r),String(e.rec===undefined?"":e.rec)];})];}));
+}
 function schedaHeadHTML(sch){
   var st=schedaStats(sch);
-  return '<div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div class="sub" style="margin:0">Difficoltà della tua scheda</div>'+scoreHTML(st)+'</div>'+(st?'<div class="sub">'+esc(statsLine(st))+'</div>':'<div class="sub">Aggiungi esercizi o usa la procedura guidata.</div>')+'</div>'+
-    '<button class="btn full" type="button" data-sc="wizard" style="margin-bottom:12px">Crea la scheda con la procedura guidata</button>';
+  return '<button class="btn ghost small" type="button" data-sc="back" style="margin-bottom:12px">'+(backConfirm?"Modifiche non salvate: tocca ancora per uscire":"← Torna alla scheda")+'</button><div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div class="sub" style="margin:0">Difficoltà della tua scheda</div>'+scoreHTML(st)+'</div>'+(st?'<div class="sub">'+esc(statsLine(st))+'</div>':'<div class="sub">Aggiungi esercizi o usa la procedura guidata.</div>')+'</div>'+
+    '';
 }
 function renderScheda(){
   var el=$("v-sc");
@@ -1100,8 +1126,8 @@ function useWizardScheda(){
   var sch=wzOut;
   $("sheet").querySelector("#wz-note").textContent="Salvo…";
   saveMyScheda(sch,[]).then(function(){
-    closeSheet();draft=null;renderScheda();
-    setStatus("Scheda salvata. Trovi gli esercizi nella scheda Esercizi.");
+    closeSheet();draft=null;renderAll();
+    setStatus("Scheda salvata.");
   }).catch(function(e){var n=$("wz-note");if(n)n.textContent="Non salvata: "+e.message;});
 }
 
@@ -1139,6 +1165,7 @@ function paintTimer(left){
   bar.querySelectorAll("[data-t]").forEach(function(b){b.classList.toggle("on",tm.state==="run"&&+b.dataset.t===tm.total);});
   $("t-stop").hidden=(tm.state==="idle");
   $("t-stop").textContent=tm.state==="done"?"Ok":"Stop";
+  $("t-tm").textContent=tm.state==="run"?left+" s":tm.state==="done"?"Via!":"Pausa";
   if(tm.state==="idle"){lab.innerHTML="Pausa";$("tprog").style.width="0";}
   else if(tm.state==="done"){lab.innerHTML="Via!";$("tprog").style.width="0";}
   else{lab.innerHTML=left+'<small>sec</small>';$("tprog").style.width=Math.max(0,Math.min(100,(left/tm.total)*100))+"%";}
@@ -1168,7 +1195,24 @@ $("b-logout").addEventListener("click",function(){doLogout(false);});
 $("b-refresh").addEventListener("click",function(){setStatus("Aggiorno…");loadState();});
 $("ex-q").addEventListener("input",renderEx);
 
-$("v-ex").addEventListener("click",function(e){var b=e.target.closest("[data-ex]");if(b)openDetail(b.dataset.ex);});
+$("v-ex").addEventListener("click",function(e){
+  var b;
+  if((b=e.target.closest("[data-exa]"))){
+    if(b.dataset.exa==="wizard")openWizard();
+    if(b.dataset.exa==="edit"){draft=null;backConfirm=false;setTab("sc");}
+    return;
+  }
+  if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
+  if((b=e.target.closest("[data-q]"))){
+    var n=b.dataset.q,h=history(S.me,n);
+    if(!h.length)return;
+    var kg=h[h.length-1].kg;
+    sendOps([{date:iso(new Date()),ex:n,kg:kg}]);
+    setStatus("Registrato: "+n+" "+fmt(kg)+" kg");
+    return;
+  }
+  if((b=e.target.closest("[data-ex]")))openDetail(b.dataset.ex);
+});
 $("ses-list").addEventListener("click",function(e){var b=e.target.closest("[data-ses]");if(b)openSession(b.dataset.ses);});
 $("v-fr").addEventListener("click",function(e){
   var m=e.target.closest("[data-fr]");
@@ -1187,8 +1231,13 @@ $("v-sc").addEventListener("click",function(e){
     var a=b.dataset.sc;
     if(a==="addg"){readDraftInputs();draft.push({id:uid(),t:"",ex:[]});renderScheda();}
     if(a==="save")saveScheda();
-    if(a==="reset"){draft=null;renderScheda();}
-    if(a==="wizard")openWizard();
+    if(a==="reset"){draft=null;backConfirm=false;renderScheda();}
+    if(a==="back"){
+      readDraftInputs();
+      var dirty=schedaSig(draft)!==schedaSig(mySchedaObj());
+      if(dirty&&!backConfirm){backConfirm=true;renderScheda();return;}
+      backConfirm=false;draft=null;setTab("ex");
+    }
   }
 });
 
