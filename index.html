@@ -787,7 +787,7 @@ function saveSession(){
 var ARN_L=["Il ferro lo teme.","Ha spostato più acciaio di un trasloco.","La palestra tremava, e non per il wifi.","Arnold chiede l'autografo."];
 var DUB_L=["Il ferro ha guardato con rispetto, e basta.","Peso scelto con prudenza: nel dubbio, meno.","Ha sollevato soprattutto dubbi.","Prima o poi aggiungerà un disco. Forse."];
 var RAZ_L=["Decollo confermato.","Il carico di ieri oggi gli sembra un giocattolo.","Progressione da manuale.","Questo va forte, tenetelo d'occhio."];
-var PRE_L=["Timbra il cartellino meglio di tutti.","Alla palestra manca solo il suo nome sulla porta.","La costanza batte il talento.","Ormai fa parte dell'arredamento."];
+var PRE_L=["La ghisa a colazione, pranzo e cena.","Ha ancora fame: un'altra giornata di ferro.","Alla palestra manca solo il suo nome sulla porta.","Non salta un pasto di ghisa."];
 function pickLine(arr,ws,k){return arr[(hashStr(ws+k))%arr.length];}
 
 function computeAwards(ws){
@@ -849,7 +849,7 @@ function computeAwards(ws){
     });
   });
   if(best) res.razzo=best;
-  // Presenza di ferro: più giorni di allenamento
+  // Affamato di ghisa: più giorni di allenamento
   var days={};
   rows.forEach(function(x){(days[x.u]=days[x.u]||{})[x.d]=1;});
   var dm={};
@@ -870,9 +870,9 @@ function awardsHTML(ws){
   var h="";
   h+=awardCard("🏆","Arnold della settimana","Vince più sfide: chi carica di più sullo stesso esercizio",
     r.arnold?joinNames(r.arnold.names):"",r.arnold?r.arnold.wins+" sfide vinte su "+r.arnold.of:noContest,pickLine(ARN_L,ws,"a"));
-  h+=awardCard("🚀","Razzo della settimana","Il maggior progresso rispetto al suo massimo precedente",
+  h+=awardCard("🚀","Razzo della settimana","Chi alza di più il carico, in percentuale, rispetto al suo massimo precedente",
     r.razzo?r.razzo.name:"",r.razzo?esc(r.razzo.ex)+": +"+fmt1(r.razzo.pct).replace(",0","")+"% ("+fmt(r.razzo.kg)+" kg)":"Nessun progresso da premiare (serve un massimo precedente).",pickLine(RAZ_L,ws,"r"));
-  h+=awardCard("🔩","Presenza di ferro","Più giorni di allenamento nella settimana",
+  h+=awardCard("🔩","Affamato di ghisa","Più giorni di allenamento nella settimana",
     r.presenza?joinNames(r.presenza.names):"",r.presenza?r.presenza.days+" giorni in palestra":"Servono almeno 2 giorni di allenamento.",pickLine(PRE_L,ws,"p"));
   h+=awardCard("🤔","Sollevatore di dubbi","Ultimo posto più spesso sullo stesso esercizio (con affetto)",
     r.dubbi?joinNames(r.dubbi.names):"",r.dubbi?r.dubbi.lasts+" volte ultimo su "+r.dubbi.of+" sfide":noContest,pickLine(DUB_L,ws,"d"));
