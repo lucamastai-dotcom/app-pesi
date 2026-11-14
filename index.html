@@ -139,6 +139,8 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 /* Scheda: giornate richiudibili e tasto rapido */
 .gh{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;margin:14px 0 8px;font-family:var(--font-display);font-size:20px;color:var(--ink);cursor:pointer;text-align:left}
 .gh b{display:inline-block;background:var(--navy);color:#fff;border-radius:6px;padding:1px 9px;font-weight:700}
+.gh .gtx{display:flex;flex-direction:column;line-height:1.1}
+.gh .gs,.group-t .gs{font:500 12px var(--font-body);color:var(--muted);text-transform:capitalize}
 .gh .cnt{margin-left:auto;font:500 13px var(--font-body);color:var(--muted);white-space:nowrap}
 .gh .cnt i{font-style:normal;font-size:16px;margin-left:4px}
 .exw{display:flex;gap:6px;margin-bottom:8px}
@@ -301,6 +303,13 @@ function weekStart(s){var d=pd(s);d.setDate(d.getDate()-((d.getDay()+6)%7));retu
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function mgLine(g){
+  var seen={},out=[];
+  (g.ex||[]).forEach(function(e){var m=e.mg||((libOf(e.n)||{}).mg)||"";if(m&&!seen[m]){seen[m]=1;out.push(m);}});
+  var t=norm(g.t||"");
+  if(!out.length||out.every(function(m){return t.indexOf(norm(m))>-1;})) return "";
+  return out.join(", ").toLowerCase();
+}
 function gBadge(t){
   t=String(t||"Gruppo").trim();
   var m=t.match(/(?:^|\s)([A-Za-z0-9])$/);
@@ -366,7 +375,7 @@ var TPL={
   TRAZIONE:["Schiena","Schiena","Spalle*","Bicipiti","Schiena","Bicipiti","Addome","Schiena"],
   GAMBE:["Quadricipiti","Femorali","Glutei","Quadricipiti","Polpacci","Femorali","Addome","Glutei"]
 };
-var TNAME={FBA:"Full Body A",FBB:"Full Body B",FBC:"Full Body C",ALTOA:"Parte alta A (petto e schiena)",ALTOB:"Parte alta B (spalle e braccia)",
+var TNAME={FBA:"Giornata A",FBB:"Giornata B",FBC:"Giornata C",ALTOA:"Parte alta A (petto e schiena)",ALTOB:"Parte alta B (spalle e braccia)",
   BASSOA:"Parte bassa A (quadricipiti)",BASSOB:"Parte bassa B (femorali e glutei)",SPINTA:"Spinta",TRAZIONE:"Trazione",GAMBE:"Gambe"};
 var TUPPER={ALTOA:1,ALTOB:1,SPINTA:1,TRAZIONE:1};
 var PLAN={2:["FBA","FBB"],3:["FBA","FBB","FBC"],4:["ALTOA","BASSOA","ALTOB","BASSOB"],5:["SPINTA","TRAZIONE","GAMBE","ALTOB","BASSOB"]};
@@ -412,7 +421,7 @@ function genScheda(p){
   var N=NEX[p.durata];
   var usedPlan={};
   var out=[];
-  PLAN[p.giorni].forEach(function(key){
+  PLAN[p.giorni].forEach(function(key,di){
     var slots=TPL[key].slice(),n=N;
     if(p.giorni>=4&&p.focus!=="totale"){
       var up=!!TUPPER[key];
@@ -446,7 +455,7 @@ function genScheda(p){
       var pr=presc(e,p.liv);
       exs.push({id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec});
     });
-    out.push({id:uid(),t:TNAME[key],ex:exs});
+    out.push({id:uid(),t:"Giornata "+(di+1),ex:exs});
   });
   return out;
 }
@@ -487,6 +496,16 @@ function setStatus(t){$("status").textContent=t||"";}
 function applyState(j){
   S.me=j.me;
   S.users=(j.users||[]).map(function(u){return {name:u.name,scheda:Array.isArray(u.scheda)?u.scheda:[]};});
+  // "Full Body A/B/C" (o "Giornata A/B/C") diventa "Giornata 1/2/3"
+  var renamedMine=false;
+  S.users.forEach(function(u){u.scheda.forEach(function(g){
+    var m=/^\s*(?:full\s*body|giornata)\s+([a-z])\s*$/i.exec(String(g.t||""));
+    if(m){g.t="Giornata "+(m[1].toUpperCase().charCodeAt(0)-64);if(u.name===S.me)renamedMine=true;}
+  });});
+  if(renamedMine&&S.token&&j.token===undefined){
+    var mine=userObj(S.me);
+    if(mine) api("saveScheda",{scheda:mine.scheda,renames:[]}).catch(function(){});
+  }
   S.log=(j.log||[]).map(function(r){return {u:r[0],d:r[1],e:r[2],kg:r[3]};});
   lastSync=Date.now();
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:j.log}));}catch(e){}
@@ -637,7 +656,7 @@ function renderEx(){
     var list=g.ex.filter(function(e){return !q||norm(e.n).indexOf(q)>-1;});
     if(!list.length) return;
     var key=g.id||("i"+gi),open=!!q||!!openG[key];
-    html+='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span>'+esc(g.t||"Gruppo")+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
+    html+='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span class="gtx"><span>'+esc(g.t||"Gruppo")+'</span>'+(mgLine(g)?'<span class="gs">'+esc(mgLine(g))+'</span>':'')+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
     if(open) html+=list.map(exRow).join("");
   });
   if(!html){
@@ -1110,7 +1129,7 @@ function renderWizard(){
     var st=schedaStats(wzOut);
     html+='<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div>';
     wzOut.forEach(function(g){
-      html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> '+esc(g.t)+'</div><div class="card plist" style="padding:6px 14px">'+
+      html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> <span>'+esc(g.t)+(mgLine(g)?' <span class="gs">· '+esc(mgLine(g))+'</span>':'')+'</span></div><div class="card plist" style="padding:6px 14px">'+
         g.ex.map(function(e){return '<div class="pe"><span>'+esc(e.n)+'</span><span>'+esc(rx(e))+'</span></div>';}).join("")+'</div>';
     });
     var has=mySchedaObj().some(function(g){return g.ex.length;});
