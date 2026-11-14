@@ -711,6 +711,7 @@ function openDetail(name){
   else if(h.length===1) html+='<div class="sub">Un solo dato per ora.</div>';
   else html+='<div class="sub">Ancora nessun dato.</div>';
   html+='</div>'+closeBtn()+'</div>';
+  html+='<a class="btn ghost small" style="display:inline-block;margin-top:10px;text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/results?search_query='+encodeURIComponent(name+" esecuzione corretta")+'">▶ Come si fa</a>';
   html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
