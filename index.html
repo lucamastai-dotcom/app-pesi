@@ -846,7 +846,7 @@ function warmHTML(g){
   var m={};(g.ex||[]).forEach(function(e){m[e.mg]=1;});
   var up=!!(m.Petto||m.Spalle||m.Schiena),low=!!(m.Quadricipiti||m.Femorali||m.Glutei);
   var mob=[];if(up) mob.push("10 rotazioni di spalle");if(low) mob.push("10 squat a corpo libero");
-  return '<div class="sub" style="padding:6px 14px 0">🔥 Riscaldamento: 5\' di cardio leggero'+(mob.length?", "+mob.join(" e "):"")+" e 2 serie leggere del primo esercizio (circa metà carico).</div>";
+  return '<div class="sub" style="padding:6px 14px 14px">🔥 Riscaldamento: 5\' di cardio leggero'+(mob.length?", "+mob.join(" e "):"")+" e 2 serie leggere del primo esercizio (circa metà carico).</div>";
 }
 // stallo: stesso peso nelle ultime 4 registrazioni, distribuite su almeno 2 settimane, ultima negli ultimi 28 giorni
 function stallInfo(name){
@@ -2003,6 +2003,12 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
   if((b=e.target.closest("[data-q]"))){
     var n=b.dataset.q,h=history(S.me,n);
+    var td=iso(new Date());
+    if(h.length&&h[h.length-1].d===td){ // già registrato oggi: un altro tocco annulla
+      sendOps([{date:td,ex:n,kg:null}]);
+      setStatus("Annullato: "+n+" di oggi.");
+      return;
+    }
     var kg=curGet(n)||(h.length?h[h.length-1].kg:0);
     if(!(kg>0))return;
     sendOps([{date:iso(new Date()),ex:n,kg:kg}]);
