@@ -227,6 +227,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
   </nav>
 
   <section id="v-ex">
+    <div class="quote" style="margin:4px 2px 0;font:italic 600 15px/1.35 var(--font-display);color:var(--accent)">«Il tuo fisico non riflette le tue intenzioni, racconta le tue abitudini.»</div>
     <div class="tbar" id="tbar" data-state="idle">
       <div class="tprog"><i id="tprog"></i></div>
       <div class="tlabel" id="tlabel">Pausa</div>
@@ -1056,6 +1057,30 @@ function openSheet(html){$("sheet").innerHTML=html;$("ov").hidden=false;}
 function closeSheet(){$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
 function closeBtn(){return '<button class="btn ghost small" type="button" data-act="close">Chiudi</button>';}
 
+/* serie di oggi: solo su questo telefono. c = serie selezionata (1..N), N+1 = tutte fatte */
+function serieState(){
+  var today=iso(new Date()),o;
+  try{o=JSON.parse(lsGet("dpc-serie")||"null");}catch(e){o=null;}
+  if(!o||o.d!==today) o={d:today,ex:{}};
+  return o;
+}
+function serieN(name){var eo=myExObj(name),n=eo?parseInt(eo.s,10):3;return(isFinite(n)&&n>0)?Math.min(n,8):3;}
+function serieHTML(name){
+  var N=serieN(name),c=serieState().ex[name]||1;
+  var h='<div class="chips">';
+  for(var i=1;i<=N;i++){
+    var done=i<c,on=i===c;
+    h+='<button type="button" class="chip'+(on?" on":"")+'" data-sr="'+i+'" aria-pressed="'+on+'" style="min-width:48px;'+(done?"opacity:.55;text-decoration:line-through":"")+'">'+(done?"✓ ":"")+i+'</button>';
+  }
+  return h+'</div><div class="sub" style="margin-top:6px">'+(c>N?"Tutte le serie fatte. Bravo!":"Tocca la serie per selezionarla, tocca ancora per segnarla fatta.")+'</div>';
+}
+function setSerie(name,k){
+  var st=serieState(),N=serieN(name),c=st.ex[name]||1;
+  st.ex[name]=(k===c)?c+1:k;   // tocco sulla serie arancione = fatta, passa alla successiva
+  if(st.ex[name]>N+1) st.ex[name]=N+1;
+  lsSet("dpc-serie",JSON.stringify(st));
+  var el=$("srow");if(el) el.innerHTML=serieHTML(name);
+}
 function openDetail(name){
   curEx=name;
   var h=history(S.me,name);
@@ -1071,6 +1096,7 @@ function openDetail(name){
   html+='<div class="row" style="margin-top:10px;flex-wrap:wrap"><a class="btn ghost small" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/results?search_query='+encodeURIComponent(name+" esecuzione corretta")+'">▶ Come si fa</a><button class="btn ghost small" type="button" data-act="tips">💡 Consigli</button></div>'+
     '<div class="card" id="tips" hidden style="margin-top:10px"><div style="font-weight:700;margin-bottom:4px">Esecuzione</div><div>'+esc(tp[0])+'</div><div style="font-weight:700;margin:12px 0 4px">Da evitare</div><div>'+esc(tp[1])+'</div>'+
     '<div class="sub" style="margin-top:12px">Sintesi generale scritta per l\'app. Per le guide complete di Project inVictus: <a href="https://www.google.com/search?q='+encodeURIComponent("site:projectinvictus.it "+name+" esecuzione errori comuni")+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">guide</a> · <a href="https://www.youtube.com/results?search_query='+encodeURIComponent("Project inVictus "+name)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">video</a></div></div>';
+  html+='<div class="card" style="margin-top:12px"><label class="l">Serie di oggi</label><div id="srow">'+serieHTML(name)+'</div></div>';
   html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
@@ -1768,6 +1794,7 @@ $("ov").addEventListener("click",function(e){
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
+  if((b=t.closest("[data-sr]"))&&curEx){setSerie(curEx,+b.dataset.sr);return;}
   if((b=t.closest("[data-wz]"))&&wz){
     var kv=b.dataset.wz.split(":"),k=kv[0],v=kv[1];
     if(k==="att"){
