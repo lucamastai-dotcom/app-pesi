@@ -788,7 +788,8 @@ function applyOpsLocal(ops){
   });
   ops.forEach(function(o){
     if(o.kg===null||o.kg===undefined) return;
-    var h=history(S.me,o.ex);if(h.length) curSet(o.ex,h[h.length-1].kg);
+    var h=history(S.me,o.ex);
+    if(h.length&&h[h.length-1].d===o.date) curSet(o.ex,o.kg); // solo se è la registrazione più recente
   });
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg];})}));}catch(e){}
 }
@@ -888,11 +889,11 @@ function exRow(e){
       '<button class="qk" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi questo peso ('+fmt(cw)+' kg)">✓</button></div>';
   }
   if(!h.length) return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+(libOf(name)&&libOf(name).eq==="x"?"a corpo libero":"nessun dato, tocca per aggiungere")+'</div></div><div class="kg">—</div></button></div>';
-  var l=h[h.length-1];
+  var l=h[h.length-1],wk=curGet(name)||l.kg;
   var d=h.length>1?deltaHTML(l.kg-h[h.length-2].kg):'<span class="d eq">primo dato</span>';
   var done=(l.d===iso(new Date()));
-  return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+h.length+(h.length===1?" volta":" volte")+' · '+dshort(l.d)+progHint(name,h)+'</div></div><div class="kg">'+fmt(l.kg)+' <small>kg</small><div>'+d+'</div></div></button>'+
-    '<button class="qk'+(done?" on":"")+'" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi lo stesso peso ('+fmt(l.kg)+' kg)">✓</button></div>'+(stallInfo(name)?stallHTML(e,l.kg):'');
+  return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+h.length+(h.length===1?" volta":" volte")+' · '+dshort(l.d)+progHint(name,h)+'</div></div><div class="kg">'+fmt(wk)+' <small>kg</small><div>'+d+'</div></div></button>'+
+    '<button class="qk'+(done?" on":"")+'" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi il peso di lavoro ('+fmt(wk)+' kg)">✓</button></div>'+(stallInfo(name)?stallHTML(e,l.kg):'');
 }
 /* ====== Esito andamentale ====== */
 function dayDiff(a,b){return Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000);}
@@ -1378,11 +1379,17 @@ function openDetail(name){
   html+=timerHTML();
   var bw=libOf(name)&&libOf(name).eq==="x";
   if(bw) html+=goalCardHTML(name)||'<div class="card sub" style="margin-top:12px">Esercizio di supporto: a corpo libero, non serve il peso.</div>';
-  else html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
-    '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):(curGet(name)?esc(fmt(curGet(name))):""))+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
-    '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
-    '<button class="btn" type="button" data-act="addw" style="flex:1 1 100%">Salva peso</button></div>'+
-    '<div class="err" id="a-note"></div></div>';
+  else{
+    var wk=curGet(name)||(last?last.kg:0);
+    html+='<div class="card" style="margin-top:12px"><label class="l" for="w-kg">Peso di lavoro</label><div class="sub" style="margin:0 0 8px">Il carico che usi adesso. Cambiarlo non scrive nello storico.</div>'+
+      '<div class="row" style="flex-wrap:nowrap"><div class="kgwrap" style="flex:1"><input type="text" inputmode="decimal" id="w-kg" value="'+(wk?esc(fmt(wk)):"")+'" placeholder="0" aria-label="Peso di lavoro in kg"><i>kg</i></div>'+
+      '<button class="btn ghost" type="button" data-act="wsave">Salva</button></div><div class="err" id="w-note"></div></div>'+
+      '<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Registra allenamento</label>'+
+      '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(wk?esc(fmt(wk)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
+      '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
+      '<button class="btn" type="button" data-act="addw" style="flex:1 1 100%">Registra nello storico</button></div>'+
+      '<div class="err" id="a-note"></div></div>';
+  }
   if(!bw) html+=chartSVG(h);
   h.slice().reverse().forEach(function(x,i,arr){
     var prev=arr[i+1];
@@ -1996,7 +2003,7 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
   if((b=e.target.closest("[data-q]"))){
     var n=b.dataset.q,h=history(S.me,n);
-    var kg=h.length?h[h.length-1].kg:curGet(n);
+    var kg=curGet(n)||(h.length?h[h.length-1].kg:0);
     if(!(kg>0))return;
     sendOps([{date:iso(new Date()),ex:n,kg:kg}]);
     setStatus("Registrato: "+n+" "+fmt(kg)+" kg");
@@ -2058,6 +2065,13 @@ $("ov").addEventListener("click",function(e){
     var a=b.dataset.act;
     if(a==="close") return closeSheet();
     if(a==="addw") return addWeight();
+    if(a==="wsave"){
+      var wv=parseFloat(String($("w-kg").value).replace(",","."));
+      if(!isFinite(wv)||wv<=0){$("w-note").textContent="Scrivi il peso in kg, per esempio 36 o 13,5.";return;}
+      curSet(curEx,wv);$("a-kg").value=fmt(wv);renderAll();
+      $("w-note").style.color="var(--up)";$("w-note").textContent="Peso di lavoro salvato.";
+      return;
+    }
     if(a==="tips"){var tpn=$("tips");if(tpn)tpn.hidden=!tpn.hidden;return;}
     if(a==="ssave") return saveSession();
     if(a==="sdel"){
