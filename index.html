@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -216,6 +216,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     <div class="hbtns">
       <button class="btn ghost small" id="b-refresh" type="button" aria-label="Aggiorna">Aggiorna</button>
       <button class="btn ghost small" id="b-logout" type="button">Esci</button>
+      <button class="btn ghost small" id="b-set" type="button" aria-label="Impostazioni" style="padding-left:10px;padding-right:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
   <nav role="tablist">
@@ -231,7 +232,6 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
     <div id="trend"></div>
     <div class="exa"><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button><button class="btn small" type="button" data-exa="wizard">Genera scheda</button></div>
-    <button class="btn ghost small" type="button" data-exa="gym" id="gym-btn" style="width:100%;margin-top:8px">🏋️ La mia palestra</button>
     <div id="ex-list"></div>
   </section>
   <section id="v-ses" hidden><div id="ses-list"></div></section>
@@ -1088,6 +1088,12 @@ function setSerie(name,k){
   lsSet("dpc-serie",JSON.stringify(st));
   var el=$("srow");if(el) el.innerHTML=serieHTML(name);
 }
+function openSettings(){
+  var g=loadGym();
+  var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Impostazioni</h2></div>'+closeBtn()+'</div>'+
+    '<button class="card" type="button" data-set="gym" style="width:100%;text-align:left;margin-top:12px;cursor:pointer;color:var(--ink);font:inherit"><b>🏋️ La mia palestra</b><div class="sub" style="margin-top:2px">'+(g?"Lista salvata su questo telefono":"Non ancora impostata: spunta gli attrezzi che hai")+'</div></button>';
+  openSheet(h);
+}
 var gymDraft=null;
 function gymGroups(){var g=[];LIB.forEach(function(e){if(g.indexOf(e.mg)<0)g.push(e.mg);});return g;}
 function renderGym(){
@@ -1742,6 +1748,7 @@ $("a-go").addEventListener("click",doAuth);
 ["a-name","a-pass","a-code"].forEach(function(id){$(id).addEventListener("keydown",function(e){if(e.key==="Enter")doAuth();});});
 document.querySelectorAll("nav button").forEach(function(b){b.addEventListener("click",function(){setTab(b.dataset.tab);});});
 $("b-logout").addEventListener("click",function(){doLogout(false);});
+$("b-set").addEventListener("click",openSettings);
 $("b-refresh").addEventListener("click",function(){setStatus("Aggiorno…");loadState();});
 $("ex-q").addEventListener("input",renderEx);
 
@@ -1750,7 +1757,6 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-exa]"))){
     if(b.dataset.exa==="wizard")openWizard();
     if(b.dataset.exa==="edit"){draft=null;backConfirm=false;setTab("sc");}
-    if(b.dataset.exa==="gym")openGym();
     return;
   }
   if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
@@ -1842,6 +1848,7 @@ $("ov").addEventListener("click",function(e){
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
+  if((b=t.closest("[data-set]"))){if(b.dataset.set==="gym")openGym();return;}
   if((b=t.closest("[data-gk]"))&&gymDraft){var gi2=gymDraft.indexOf(b.dataset.gk);if(gi2>-1)gymDraft.splice(gi2,1);else gymDraft.push(b.dataset.gk);return renderGym();}
   if((b=t.closest("[data-gact]"))&&gymDraft){return gymAct(b.dataset.gact);}
   if((b=t.closest("[data-sr]"))&&curEx){setSerie(curEx,+b.dataset.sr);return;}
