@@ -388,13 +388,20 @@ var PLAN={2:["FBA","FBB"],3:["FBA","FBB","FBC"],4:["ALTOA","BASSOA","ALTOB","BAS
 
 function presc(e,liv,obi){
   var p;
-  if(obi==="forza") p=e.c?{s:liv==="principiante"?3:4,r:"6",rec:120}:{s:3,r:"8-10",rec:90};
+  if(obi==="forza") p=e.c?{s:liv==="principiante"?3:4,r:"6",rec:120}:{s:3,r:"8",rec:90};
   else if(obi==="tono") p={s:3,r:"15",rec:60};
-  else if(liv==="principiante") p=e.c?{s:3,r:"10-12",rec:90}:{s:3,r:"12",rec:60};
-  else if(liv==="intermedio") p=e.c?{s:4,r:"8-10",rec:90}:{s:3,r:"10-12",rec:60};
-  else p=e.c?{s:4,r:"6-8",rec:120}:{s:4,r:"10-12",rec:60};
+  else if(liv==="principiante") p=e.c?{s:3,r:"10",rec:90}:{s:3,r:"12",rec:60};
+  else if(liv==="intermedio") p=e.c?{s:4,r:"8",rec:90}:{s:3,r:"12",rec:60};
+  else p=e.c?{s:4,r:"6",rec:120}:{s:4,r:"10",rec:60};
   if(e.mg==="Addome"||e.mg==="Polpacci") p.r="15";
   return p;
+}
+// "10-12" -> un solo numero: esercizi principali il più basso, isolamento il più alto
+function singleReps(r,name){
+  var m=/^\s*(\d+)\s*[-–]\s*(\d+)\s*$/.exec(String(r===undefined||r===null?"":r));
+  if(!m) return r;
+  var lo=+m[1],hi=+m[2],lb=libOf(name);
+  return String(lb&&!lb.c?hi:lo);
 }
 function pickEx(mg,post,occ,used,usedPlan,p){
   var base=LIB.filter(function(e){
@@ -527,7 +534,7 @@ function sampleScheda(){
   return d.map(function(g){
     return {id:uid(),t:g[0],ex:g[1].map(function(r){
       var lb=libOf(r[0]);
-      return {id:uid(),n:r[0],mg:lb?lb.mg:"",lv:lb?lb.lv:2,s:r[1],r:r[2],rec:r[3]};
+      return {id:uid(),n:r[0],mg:lb?lb.mg:"",lv:lb?lb.lv:2,s:r[1],r:singleReps(r[2],r[0]),rec:r[3]};
     })};
   });
 }
@@ -553,15 +560,16 @@ function applyState(j){
   S.me=j.me;
   S.users=(j.users||[]).map(function(u){return {name:u.name,scheda:Array.isArray(u.scheda)?u.scheda:[]};});
   // "Full Body A/B/C" (o "Giornata A/B/C") diventa "Giornata 1/2/3"
-  var renamedMine=false;
+  var renamedMine=false,repsMig=!lsGet("dpc-reps1");
   S.users.forEach(function(u){u.scheda.forEach(function(g){
+    if(repsMig) g.ex.forEach(function(e){var r2=singleReps(e.r,e.n);if(r2!==e.r){e.r=r2;if(u.name===S.me)renamedMine=true;}});
     var m=/^\s*(?:full\s*body|giornata)\s+([a-z])\s*$/i.exec(String(g.t||""));
     if(m){g.t="Giornata "+(m[1].toUpperCase().charCodeAt(0)-64);if(u.name===S.me)renamedMine=true;}
   });});
   if(renamedMine&&S.token&&j.token===undefined){
     var mine=userObj(S.me);
-    if(mine) api("saveScheda",{scheda:mine.scheda,renames:[]}).catch(function(){});
-  }
+    if(mine) api("saveScheda",{scheda:mine.scheda,renames:[]}).then(function(){if(repsMig)lsSet("dpc-reps1","1");}).catch(function(){});
+  }else if(!renamedMine&&repsMig&&S.me&&userObj(S.me)) lsSet("dpc-reps1","1");
   S.log=(j.log||[]).map(function(r){return {u:r[0],d:r[1],e:r[2],kg:r[3]};});
   lastSync=Date.now();
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:j.log}));}catch(e){}
@@ -1150,7 +1158,7 @@ function renderScheda(){
       var k=gi+"."+ei;
       html+='<div class="exe"><div class="exr"><input data-en="'+k+'" value="'+esc(e.n)+'" aria-label="Nome esercizio"><button class="x" type="button" data-edel="'+k+'" aria-label="Togli esercizio">×</button></div>'+
         '<div class="rx3"><label>Serie<input data-es="'+k+'" inputmode="numeric" value="'+esc(e.s===undefined?"":e.s)+'" placeholder="3"></label>'+
-        '<label>Ripetizioni<input data-er="'+k+'" value="'+esc(e.r===undefined?"":e.r)+'" placeholder="10-12"></label>'+
+        '<label>Ripetizioni<input data-er="'+k+'" value="'+esc(e.r===undefined?"":e.r)+'" placeholder="10"></label>'+
         '<label>Recupero (s)<input data-ec="'+k+'" inputmode="numeric" value="'+esc(e.rec===undefined?"":e.rec)+'" placeholder="90"></label></div></div>';
     });
     html+='<button class="btn ghost small full" type="button" data-eadd="'+gi+'" style="margin-top:10px">Aggiungi esercizio</button></div>';
