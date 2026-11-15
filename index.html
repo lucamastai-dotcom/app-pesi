@@ -228,16 +228,6 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 
   <section id="v-ex">
     <div class="quote" style="margin:4px 2px 0;font:italic 600 15px/1.35 var(--font-display);color:var(--accent)">«Il tuo fisico non riflette le tue intenzioni, racconta le tue abitudini.»</div>
-    <div class="tbar" id="tbar" data-state="idle">
-      <div class="tprog"><i id="tprog"></i></div>
-      <div class="tlabel" id="tlabel">Pausa</div>
-      <div class="tin">
-        <button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button>
-        <button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button>
-        <button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button>
-        <button type="button" id="t-stop" hidden>Stop</button>
-      </div>
-    </div>
     <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
     <div id="trend"></div>
     <div class="exa"><button class="btn small" type="button" data-exa="wizard">Genera scheda</button><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button></div>
@@ -1081,6 +1071,10 @@ function setSerie(name,k){
   lsSet("dpc-serie",JSON.stringify(st));
   var el=$("srow");if(el) el.innerHTML=serieHTML(name);
 }
+function timerHTML(){
+  return '<div class="tbar" id="tbar" data-state="idle"><div class="tprog"><i id="tprog"></i></div><div class="tlabel" id="tlabel">Pausa</div><div class="tin">'+
+    '<button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button><button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button><button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button><button type="button" id="t-stop" hidden>Stop</button></div></div>';
+}
 function openDetail(name){
   curEx=name;
   var h=history(S.me,name);
@@ -1097,6 +1091,7 @@ function openDetail(name){
     '<div class="card" id="tips" hidden style="margin-top:10px"><div style="font-weight:700;margin-bottom:4px">Esecuzione</div><div>'+esc(tp[0])+'</div><div style="font-weight:700;margin:12px 0 4px">Da evitare</div><div>'+esc(tp[1])+'</div>'+
     '<div class="sub" style="margin-top:12px">Sintesi generale scritta per l\'app. Per le guide complete di Project inVictus: <a href="https://www.google.com/search?q='+encodeURIComponent("site:projectinvictus.it "+name+" esecuzione errori comuni")+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">guide</a> · <a href="https://www.youtube.com/results?search_query='+encodeURIComponent("Project inVictus "+name)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">video</a></div></div>';
   html+='<div class="card" style="margin-top:12px"><label class="l">Serie di oggi</label><div id="srow">'+serieHTML(name)+'</div></div>';
+  html+=timerHTML();
   html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
@@ -1108,6 +1103,7 @@ function openDetail(name){
     html+='<div class="hist"><div>'+esc(dlabel(x.d))+'</div><div class="row" style="gap:10px"><b>'+fmt(x.kg)+' kg</b>'+(prev?deltaHTML(x.kg-prev.kg):'')+'<button class="x" type="button" data-del="'+esc(x.d)+'" aria-label="Elimina">×</button></div></div>';
   });
   openSheet(html);
+  if(tm.state==="run") tick(); else paintTimer(0);
 }
 function addWeight(){
   var kv=parseFloat(String($("a-kg").value).replace(",","."));
@@ -1666,11 +1662,11 @@ function beep(){
 }
 function paintTimer(left){
   var bar=$("tbar"),lab=$("tlabel");
+  if(!bar||!lab) return; // timer visibile solo dentro un esercizio
   bar.setAttribute("data-state",tm.state);
   bar.querySelectorAll("[data-t]").forEach(function(b){b.classList.toggle("on",tm.state==="run"&&+b.dataset.t===tm.total);});
   $("t-stop").hidden=(tm.state==="idle");
   $("t-stop").textContent=tm.state==="done"?"Ok":"Stop";
-  $("t-tm").textContent=tm.state==="run"?left+" s":tm.state==="done"?"Via!":"Pausa";
   if(tm.state==="idle"){lab.innerHTML="Pausa";$("tprog").style.width="0";}
   else if(tm.state==="done"){lab.innerHTML="Via!";$("tprog").style.width="0";}
   else{lab.innerHTML=left+'<small>sec</small>';$("tprog").style.width=Math.max(0,Math.min(100,(left/tm.total)*100))+"%";}
@@ -1835,9 +1831,9 @@ $("ov").addEventListener("change",function(e){
 $("ov").addEventListener("focusin",function(e){if(e.target&&e.target.id==="a-kg"){try{e.target.select();}catch(x){}}});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("ov").hidden)closeSheet();});
 
-$("tbar").addEventListener("click",function(e){
+$("ov").addEventListener("click",function(e){
   var b=e.target.closest("[data-t]");
-  if(b)return startTimer(+b.dataset.t);
+  if(b&&b.closest("#tbar"))return startTimer(+b.dataset.t);
   if(e.target.id==="t-stop")stopTimer();
 });
 document.addEventListener("visibilitychange",function(){
