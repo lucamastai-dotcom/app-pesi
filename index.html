@@ -682,8 +682,12 @@ function applyState(j){
   lastSync=Date.now();
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:j.log}));}catch(e){}
 }
+var saveAt=0,saving=0;
 function loadState(){
-  return api("state").then(function(j){applyState(j);$("who").textContent="Profilo di "+S.me;renderAll();setStatus("");}).catch(function(e){
+  var t0=Date.now();
+  return api("state").then(function(j){
+    if(saving>0||saveAt>=t0) return; // risposta partita prima di un salvataggio: sarebbe vecchia
+    applyState(j);$("who").textContent="Profilo di "+S.me;renderAll();setStatus("");}).catch(function(e){
     if(/scaduto/.test(e.message)){doLogout(true);return;}
     setStatus("Non riesco ad aggiornare: "+e.message);
   });
@@ -736,7 +740,7 @@ function doLogout(silent){
   var t=S.token;
   if(t&&!silent){try{api("logout");}catch(e){}}
   S={token:"",me:"",users:[],log:[]};
-  lsDel("dpc-token");lsDel("dpc-cache");
+  lsDel("dpc-token");lsDel("dpc-cache");lsDel("dpc-draft");
   draft=null;
   closeSheet();
   showAuth();setMode("login");
@@ -778,7 +782,8 @@ function sendOps(ops){
   });
 }
 function saveMyScheda(scheda,renames){
-  return api("saveScheda",{scheda:scheda,renames:renames||[]}).then(function(){
+  saveAt=Date.now();saving++;
+  return api("saveScheda",{scheda:scheda,renames:renames||[]}).then(function(r){saving--;saveAt=Date.now();return r;},function(e){saving--;throw e;}).then(function(){
     var me=userObj(S.me);
     if(me) me.scheda=scheda;
     (renames||[]).forEach(function(r){S.log.forEach(function(x){if(x.u===S.me&&x.e===r.from) x.e=r.to;});});
@@ -1599,7 +1604,7 @@ function copyFriendScheda(){
   closeSheet();
   setStatus("Copio la scheda…");
   saveMyScheda(sch,[]).then(function(){
-    draft=null;setStatus("Scheda copiata: ora è la tua. I pesi che avevi restano salvati.");setTab("sc");
+    draft=null;clearDraft();setStatus("Scheda copiata: ora è la tua. I pesi che avevi restano salvati.");setTab("sc");
   }).catch(function(e){setStatus("Non copiata: "+e.message);});
 }
 
@@ -1614,9 +1619,25 @@ function schedaHeadHTML(sch){
   return '<button class="btn ghost small" type="button" data-sc="back" style="margin-bottom:12px">'+(backConfirm?"Modifiche non salvate: tocca ancora per uscire":"← Torna alla scheda")+'</button><div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div class="sub" style="margin:0">Difficoltà della tua scheda</div>'+scoreHTML(st)+'</div>'+(st?'<div class="sub">'+esc(statsLine(st))+'</div>':'<div class="sub">Aggiungi esercizi o usa la procedura guidata.</div>')+'</div>'+
     '';
 }
+function persistDraft(){
+  try{
+    if(!draft) return;
+    if(schedaSig(draft)===schedaSig(mySchedaObj())){localStorage.removeItem("dpc-draft");return;}
+    localStorage.setItem("dpc-draft",JSON.stringify({u:S.me,sig:schedaSig(mySchedaObj()),d:draft}));
+  }catch(e){}
+}
+function clearDraft(){lsDel("dpc-draft");}
+function storedDraft(){
+  try{
+    var o=JSON.parse(lsGet("dpc-draft")||"null");
+    if(o&&o.u===S.me&&o.sig===schedaSig(mySchedaObj())&&Array.isArray(o.d)) return o.d;
+  }catch(e){}
+  return null;
+}
+var draftRestored=false;
 function renderScheda(){
   var el=$("v-sc");
-  if(!draft) draft=cloneScheda(mySchedaObj());
+  if(!draft){var sd=storedDraft();if(sd){draft=sd;draftRestored=true;}else draft=cloneScheda(mySchedaObj());}
   var html=schedaHeadHTML(draft);
   draft.forEach(function(g,gi){
     html+='<div class="gcard"><div class="gt"><input data-gt="'+gi+'" value="'+esc(g.t)+'" aria-label="Nome gruppo" placeholder="Nome allenamento"><button class="mv" type="button" data-gmv="'+gi+'.-1" aria-label="Sposta allenamento su"'+(gi===0?' disabled':'')+'>▲</button><button class="mv" type="button" data-gmv="'+gi+'.1" aria-label="Sposta allenamento giù"'+(gi===draft.length-1?' disabled':'')+'>▼</button><button class="x" type="button" data-gdel="'+gi+'" aria-label="Elimina allenamento">×</button></div>';
@@ -1633,6 +1654,8 @@ function renderScheda(){
     '<div class="row" style="margin-top:12px"><button class="btn" type="button" data-sc="save" style="flex:1">Salva scheda</button><button class="btn ghost" type="button" data-sc="reset">Annulla</button></div>'+
     '<div class="err" id="sc-note"></div>';
   el.innerHTML=html;
+  if(draftRestored){draftRestored=false;$("sc-note").textContent="Ho ripristinato le modifiche che non avevi ancora salvato.";}
+  persistDraft();
 }
 function readDraftInputs(){
   if(!draft) return;
@@ -1671,7 +1694,7 @@ function saveScheda(){
   clean.forEach(function(g){g.ex.forEach(function(e){if(old[e.id]&&old[e.id]!==e.n) renames.push({from:old[e.id],to:e.n});});});
   $("sc-note").textContent="Salvo…";
   saveMyScheda(clean,renames).then(function(){
-    draft=null;
+    draft=null;clearDraft();
     setTab("ex");
     setStatus("Scheda salvata.");
   }).catch(function(e){$("sc-note").textContent="Non salvata: "+e.message;});
@@ -1873,7 +1896,7 @@ function useWizardScheda(){
   cloneScheda(mySchedaObj()).forEach(function(g){if(/^Obiettivo/.test(g.t||"")||isRoutine(g)) sch.push(g);});
   $("sheet").querySelector("#wz-note").textContent="Salvo…";
   saveMyScheda(sch,[]).then(function(){
-    closeSheet();draft=null;renderAll();
+    closeSheet();draft=null;clearDraft();renderAll();
     setStatus("Scheda salvata.");
   }).catch(function(e){var n=$("wz-note");if(n)n.textContent="Non salvata: "+e.message;});
 }
@@ -1975,6 +1998,7 @@ $("v-fr").addEventListener("click",function(e){
 });
 $("v-fr").addEventListener("change",function(e){if(e.target.id==="fr-ex"){frEx=e.target.value;renderFriends();}});
 
+$("v-sc").addEventListener("input",function(){readDraftInputs();persistDraft();});
 $("v-sc").addEventListener("click",function(e){
   var t=e.target,b;
   if((b=t.closest("[data-gmv]"))){readDraftInputs();var q=b.dataset.gmv.split("."),a=+q[0],d=+q[1]||-1;if(b.dataset.gmv.indexOf(".-1")>-1)d=-1;var c=a+d;if(c>=0&&c<draft.length){var tm=draft[a];draft[a]=draft[c];draft[c]=tm;}renderScheda();return;}
@@ -1986,12 +2010,12 @@ $("v-sc").addEventListener("click",function(e){
     var a=b.dataset.sc;
     if(a==="addg"){readDraftInputs();draft.push({id:uid(),t:"",ex:[]});renderScheda();}
     if(a==="save")saveScheda();
-    if(a==="reset"){draft=null;backConfirm=false;renderScheda();}
+    if(a==="reset"){draft=null;clearDraft();backConfirm=false;renderScheda();}
     if(a==="back"){
       readDraftInputs();
       var dirty=schedaSig(draft)!==schedaSig(mySchedaObj());
       if(dirty&&!backConfirm){backConfirm=true;renderScheda();return;}
-      backConfirm=false;draft=null;setTab("ex");
+      backConfirm=false;draft=null;clearDraft();setTab("ex");
     }
   }
 });
