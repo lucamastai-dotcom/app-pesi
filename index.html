@@ -103,7 +103,11 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .exe{border-top:1px solid var(--line);padding:10px 0 4px}
 .exe:first-of-type{border-top:0}
 .exr{display:flex;gap:8px;align-items:center}
-.rx3{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:8px;margin-top:8px}
+.rx3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px;margin-top:8px}
+.exr input,.gt input{min-width:0;flex:1}
+.mv{border:0;background:transparent;color:var(--muted);font-size:16px;cursor:pointer;padding:6px 6px;line-height:1}
+.mv:disabled{opacity:.25;cursor:default}
+.gcard,#v-sc{max-width:100%;overflow-x:hidden}
 .rx3 label{font-size:11px;font-weight:600;color:var(--muted);display:block}
 .rx3 input{margin-top:3px;padding:8px 10px;font-size:15px}
 /* Chip, punteggio, premi, procedura guidata */
@@ -320,9 +324,28 @@ function mgLine(g){
   if(!out.length||out.every(function(m){return t.indexOf(norm(m))>-1;})) return "";
   return out.join(", ").toLowerCase();
 }
+function isRoutine(g){return /^Routine/.test((g&&g.t)||"");}
+var ROUTINES=[
+  {k:"schiena",t:"Routine mobilità schiena",ex:[["Gatto-cammello","Schiena","2","10"],["Bird dog (braccio e gamba opposti)","Schiena","2","8 per lato"],["Rotazione del busto a quattro zampe","Schiena","2","8 per lato"],["Posizione del bambino","Schiena","2","30 sec"]]},
+  {k:"plank",t:"Routine plank",ex:[["Plank sugli avambracci","Addome","3","30 sec"],["Plank laterale","Addome","2","20 sec per lato"]]}
+];
+function doneGet(){try{return JSON.parse(localStorage.getItem("dpc-fatto")||"{}")||{};}catch(e){return {};}}
+function doneKey(g){return (S.me||"")+"|"+(g.id||g.t);}
+function doneLast(g){var a=doneGet()[doneKey(g)]||[];return a.length?a[a.length-1]:null;}
+function doneToggle(g){
+  var m=doneGet(),k=doneKey(g),a=m[k]||[],t=iso(new Date()),i=a.indexOf(t);
+  if(i>-1)a.splice(i,1);else a.push(t);
+  a.sort();m[k]=a.slice(-60);lsSet("dpc-fatto",JSON.stringify(m));
+}
+function doneTxt(g){
+  var l=doneLast(g);if(!l) return "mai fatta";
+  var n=dayDiff(l,iso(new Date()));
+  return n===0?"fatta oggi":n===1?"ultima volta ieri":"ultima volta "+n+" giorni fa";
+}
 function gBadge(t){
   t=String(t||"Gruppo").trim();
   if(/^Obiettivo/.test(t)) return "🎯";
+  if(/^Routine/.test(t)) return "🧘";
   var m=t.match(/(?:^|\s)([A-Za-z0-9])$/);
   return (m?m[1]:t.charAt(0)).toUpperCase();
 }
@@ -345,7 +368,7 @@ function dayMin(exs){var m=10;exs.forEach(function(e){m+=exMin(+e.s>0?+e.s:3,(e.
 function schedaStats(sch){
   var ex=0,sets=0,lvSum=0,mins=[];
   (sch||[]).forEach(function(g){
-    if(!g.ex||!g.ex.length) return;
+    if(!g.ex||!g.ex.length||isRoutine(g)) return;
     var m=10;
     g.ex.forEach(function(e){
       var s=+e.s>0?+e.s:3;
@@ -843,7 +866,7 @@ function trendInfo(){
   var all=Object.keys(dates).sort();
   if(all.length<2) return null;
   var win=all.filter(function(d){var n=dayDiff(d,today);return n>=0&&n<28;});
-  var days=mySchedaObj().filter(function(g){return g.ex&&g.ex.length&&!/^Obiettivo/.test(g.t||"");}).length||3;
+  var days=mySchedaObj().filter(function(g){return g.ex&&g.ex.length&&!/^Obiettivo/.test(g.t||"")&&!isRoutine(g);}).length||3;
   var weeks=Math.min(4,Math.max(1,Math.ceil((dayDiff(all[0],today)+1)/7)));
   var r=(win.length/weeks)/days;
   var up=0,same=0,down=0;
@@ -878,18 +901,26 @@ function renderEx(){
   $("trend").innerHTML=trendHTML();
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
-  var html="",std="",obj="";
+  var html="",std="",obj="",rou="";
   function isObj(g){return /^Obiettivo/.test(g.t||"");}
   sch.forEach(function(g,gi){
     var list=g.ex.filter(function(e){return !q||norm(e.n).indexOf(q)>-1;});
     if(!list.length) return;
     var key=g.id||("i"+gi),open=!!q||!!openG[key];
-    var h='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span class="gtx"><span>'+esc(g.t||"Gruppo")+'</span>'+(mgLine(g)?'<span class="gs">'+esc(mgLine(g))+'</span>':'')+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
-    if(open) h+=warmHTML(g)+list.map(exRow).join("");
-    if(isObj(g)) obj+=h;else std+=h;
+    var rt=isRoutine(g);
+    var h='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span class="gtx"><span>'+esc(g.t||"Gruppo")+'</span>'+(rt?'<span class="gs">'+esc(doneTxt(g))+'</span>':(mgLine(g)?'<span class="gs">'+esc(mgLine(g))+'</span>':''))+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
+    if(open){
+      if(rt){
+        h+=list.map(function(e){return '<div class="exw"><div class="ex" style="cursor:default"><div><div class="n">'+esc(e.n)+'</div><div class="m">'+esc(e.s&&e.r?e.s+" × "+e.r:"")+'</div></div></div></div>';}).join("")+
+          '<div style="padding:4px 2px 10px"><button class="btn'+(doneLast(g)===iso(new Date())?" ghost":"")+' full" type="button" data-rdone="'+esc(key)+'">'+(doneLast(g)===iso(new Date())?"✓ Fatta oggi (tocca per annullare)":"Fatto oggi ✓")+'</button></div>';
+      }else h+=warmHTML(g)+list.map(exRow).join("");
+    }
+    if(rt) rou+=h;else if(isObj(g)) obj+=h;else std+=h;
   });
-  if(obj){
-    html=(std?'<div class="sech">Scheda standard</div>'+std:'')+'<div class="sech">'+(std?'Schede per obiettivo':'Schede per obiettivo')+'</div>'+obj;
+  if(obj||rou){
+    html=(std?'<div class="sech">Scheda standard</div>'+std:'');
+    if(obj) html+='<div class="sech">Schede per obiettivo</div>'+obj;
+    if(rou) html+='<div class="sech">Routine extra</div>'+rou;
   }else html=std;
   if(!html){
     html=sch.length?'<div class="empty">Nessun esercizio trovato.</div>':'<div class="empty">La tua scheda è vuota.<br>Toccando Genera scheda ti propongo una scheda, oppure con Modifica scheda la scrivi tu.</div>';
@@ -1588,10 +1619,10 @@ function renderScheda(){
   if(!draft) draft=cloneScheda(mySchedaObj());
   var html=schedaHeadHTML(draft);
   draft.forEach(function(g,gi){
-    html+='<div class="gcard"><div class="gt"><input data-gt="'+gi+'" value="'+esc(g.t)+'" aria-label="Nome gruppo" placeholder="Nome allenamento"><button class="x" type="button" data-gdel="'+gi+'" aria-label="Elimina allenamento">×</button></div>';
+    html+='<div class="gcard"><div class="gt"><input data-gt="'+gi+'" value="'+esc(g.t)+'" aria-label="Nome gruppo" placeholder="Nome allenamento"><button class="mv" type="button" data-gmv="'+gi+'.-1" aria-label="Sposta allenamento su"'+(gi===0?' disabled':'')+'>▲</button><button class="mv" type="button" data-gmv="'+gi+'.1" aria-label="Sposta allenamento giù"'+(gi===draft.length-1?' disabled':'')+'>▼</button><button class="x" type="button" data-gdel="'+gi+'" aria-label="Elimina allenamento">×</button></div>';
     g.ex.forEach(function(e,ei){
       var k=gi+"."+ei;
-      html+='<div class="exe"><div class="exr"><input data-en="'+k+'" value="'+esc(e.n)+'" aria-label="Nome esercizio"><button class="x" type="button" data-edel="'+k+'" aria-label="Togli esercizio">×</button></div>'+
+      html+='<div class="exe"><div class="exr"><input data-en="'+k+'" value="'+esc(e.n)+'" aria-label="Nome esercizio"><button class="mv" type="button" data-emv="'+k+'.-1" aria-label="Sposta esercizio su"'+(ei===0?' disabled':'')+'>▲</button><button class="mv" type="button" data-emv="'+k+'.1" aria-label="Sposta esercizio giù"'+(ei===g.ex.length-1?' disabled':'')+'>▼</button><button class="x" type="button" data-edel="'+k+'" aria-label="Togli esercizio">×</button></div>'+
         '<div class="rx3"><label>Serie<input data-es="'+k+'" inputmode="numeric" value="'+esc(e.s===undefined?"":e.s)+'" placeholder="3"></label>'+
         '<label>Ripetizioni<input data-er="'+k+'" value="'+esc(e.r===undefined?"":e.r)+'" placeholder="10"></label>'+
         '<label>Recupero (s)<input data-ec="'+k+'" inputmode="numeric" value="'+esc(e.rec===undefined?"":e.rec)+'" placeholder="90"></label></div></div>';
@@ -1641,10 +1672,8 @@ function saveScheda(){
   $("sc-note").textContent="Salvo…";
   saveMyScheda(clean,renames).then(function(){
     draft=null;
-    renderScheda();
-    $("sc-note").style.color="var(--up)";
-    $("sc-note").textContent="Scheda salvata.";
-    setTimeout(function(){if($("sc-note")){$("sc-note").textContent="";$("sc-note").style.color="";}},2500);
+    setTab("ex");
+    setStatus("Scheda salvata.");
   }).catch(function(e){$("sc-note").textContent="Non salvata: "+e.message;});
 }
 
@@ -1766,6 +1795,8 @@ function renderWizard(){
       WZOPT.forEach(function(o){if(o[0]==="stile") html+=chipRow(o);});
       html+=ibHTML();
       html+='<label class="l" style="margin-top:14px">Un movimento da conquistare</label><button class="btn ghost full" type="button" data-act="goalopen">🎯 Scheda per un obiettivo (corpo libero)</button><div class="sub" style="margin-top:6px">Percorso guidato verso piegamenti, trazioni, squat, plank o toccarsi i piedi.</div>';
+      var haveR={};mySchedaObj().forEach(function(g){haveR[g.t]=1;});
+      html+='<label class="l" style="margin-top:14px">Routine extra (fuori dalla scheda)</label><div class="row" style="gap:8px;flex-wrap:wrap">'+ROUTINES.map(function(r){return haveR[r.t]?'<button class="btn ghost small" type="button" disabled>✓ '+esc(r.t.replace(/^Routine /,""))+' (già nella scheda)</button>':'<button class="btn ghost small" type="button" data-act="radd" data-k="'+r.k+'">+ '+esc(r.t.replace(/^Routine /,""))+'</button>';}).join("")+'</div><div class="sub" style="margin-top:6px">Giornate a parte che segni con "Fatto oggi": non contano nei tuoi allenamenti a settimana.</div>';
       html+='</div>';
     }
     html+='<div class="sub" style="margin-top:14px">'+DISCL+'</div>';
@@ -1839,6 +1870,7 @@ function useWizardScheda(){
   if(has&&!useConfirm){useConfirm=true;renderWizard();return;}
   var sch=cloneScheda(wzOut);
   sch.forEach(function(g){g.ex.forEach(function(e){delete e.lk;});});
+  cloneScheda(mySchedaObj()).forEach(function(g){if(/^Obiettivo/.test(g.t||"")||isRoutine(g)) sch.push(g);});
   $("sheet").querySelector("#wz-note").textContent="Salvo…";
   saveMyScheda(sch,[]).then(function(){
     closeSheet();draft=null;renderAll();
@@ -1919,6 +1951,8 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-ex]")))openDetail(b.dataset.ex);
 });
 $("ex-list").addEventListener("click",function(e){
+  var rb=e.target.closest("[data-rdone]");
+  if(rb){var gg=mySchedaObj().filter(function(x){return (x.id||"")===rb.dataset.rdone||("i"+mySchedaObj().indexOf(x))===rb.dataset.rdone;})[0];if(gg){doneToggle(gg);renderEx();}return;}
   var b=e.target.closest("[data-stall]");if(!b) return;
   e.stopPropagation();
   var nm=b.dataset.stall,sch=cloneScheda(mySchedaObj()),kg=(stallInfo(nm)||{}).kg,done=false;
@@ -1943,6 +1977,8 @@ $("v-fr").addEventListener("change",function(e){if(e.target.id==="fr-ex"){frEx=e
 
 $("v-sc").addEventListener("click",function(e){
   var t=e.target,b;
+  if((b=t.closest("[data-gmv]"))){readDraftInputs();var q=b.dataset.gmv.split("."),a=+q[0],d=+q[1]||-1;if(b.dataset.gmv.indexOf(".-1")>-1)d=-1;var c=a+d;if(c>=0&&c<draft.length){var tm=draft[a];draft[a]=draft[c];draft[c]=tm;}renderScheda();return;}
+  if((b=t.closest("[data-emv]"))){readDraftInputs();var r=b.dataset.emv.split("."),gi2=+r[0],ei2=+r[1],dd=b.dataset.emv.slice(-2)==="-1"?-1:1,ce=ei2+dd,L=draft[gi2].ex;if(ce>=0&&ce<L.length){var te=L[ei2];L[ei2]=L[ce];L[ce]=te;}renderScheda();return;}
   if((b=t.closest("[data-gdel]"))){readDraftInputs();draft.splice(+b.dataset.gdel,1);renderScheda();return;}
   if((b=t.closest("[data-edel]"))){readDraftInputs();var p=b.dataset.edel.split(".");draft[+p[0]].ex.splice(+p[1],1);renderScheda();return;}
   if((b=t.closest("[data-eadd]"))){readDraftInputs();openPicker(+b.dataset.eadd);return;}
@@ -1982,6 +2018,13 @@ $("ov").addEventListener("click",function(e){
     if(a==="ibapply") return applyIB();
     if(a==="profsave"){var pe2=$("p-eta");profDraft.eta=pe2?pe2.value.replace(/\D/g,""):profDraft.eta;profSave(profDraft);profDraft=null;openSettings();setStatus("Profilo salvato.");return;}
     if(a==="wzadv"){wz.adv=!wz.adv;return renderWizard();}
+    if(a==="radd"){
+      var pr=ROUTINES.filter(function(r){return r.k===b.dataset.k;})[0];if(!pr) return;
+      var sch=cloneScheda(mySchedaObj());
+      sch.push({id:uid(),t:pr.t,ex:pr.ex.map(function(x){return {id:uid(),n:x[0],mg:x[1],s:+x[2],r:x[3],rec:30};})});
+      saveMyScheda(sch,[]).then(function(){draft=null;renderAll();renderWizard();setStatus("Routine aggiunta alla Scheda.");}).catch(function(er){setStatus("Non salvata: "+er.message);});
+      return;
+    }
     if(a==="goalopen"){gSel=gSel||"push";return openGoal();}
     if(a==="goalmake"){
       var gk=gSel,gg=GOALS[gk],v,tg=gg.tdef;
