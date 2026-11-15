@@ -659,8 +659,8 @@ function api(action,payload){
   var url=apiUrl();
   if(!url) return Promise.reject(new Error("Manca l'indirizzo del backend."));
   var body=JSON.stringify(Object.assign({action:action,token:S.token},payload||{}));
-  return fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body})
-    .then(function(r){return r.json();})
+  var to=new Promise(function(_,rej){setTimeout(function(){rej(new Error("connessione lenta, riprova"));},25000);});
+  return Promise.race([fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body}).then(function(r){return r.json();}),to])
     .then(function(j){if(!j||!j.ok) throw new Error((j&&j.error)||"Errore del server"); return j;});
 }
 function setStatus(t){$("status").textContent=t||"";}
@@ -683,10 +683,13 @@ function applyState(j){
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:j.log}));}catch(e){}
 }
 var saveAt=0,saving=0;
-function loadState(){
-  var t0=Date.now();
+function loadState(tries){
+  var t0=Date.now();tries=tries||0;
   return api("state").then(function(j){
-    if(saving>0||saveAt>=t0) return; // risposta partita prima di un salvataggio: sarebbe vecchia
+    if(saving>0||saveAt>=t0){ // risposta partita prima di un salvataggio: sarebbe vecchia, riprovo
+      if(tries<8) return new Promise(function(r){setTimeout(r,800);}).then(function(){return loadState(tries+1);});
+      setStatus("");return;
+    }
     applyState(j);$("who").textContent="Profilo di "+S.me;renderAll();setStatus("");}).catch(function(e){
     if(/scaduto/.test(e.message)){doLogout(true);return;}
     setStatus("Non riesco ad aggiornare: "+e.message);
@@ -1956,7 +1959,7 @@ $("a-go").addEventListener("click",doAuth);
 document.querySelectorAll("nav button").forEach(function(b){b.addEventListener("click",function(){setTab(b.dataset.tab);});});
 $("b-logout").addEventListener("click",function(){doLogout(false);});
 $("b-set").addEventListener("click",openSettings);
-$("b-refresh").addEventListener("click",function(){setStatus("Aggiorno…");loadState();});
+$("b-refresh").addEventListener("click",function(){setStatus("Aggiorno…");loadState().then(function(){if($("status").textContent==="Aggiorno…"||$("status").textContent==="")setStatus("Aggiornato.");});});
 $("ex-q").addEventListener("input",renderEx);
 $("ex-sb").addEventListener("click",function(){var q=$("ex-q");q.hidden=!q.hidden;if(!q.hidden)q.focus();else{q.value="";renderEx();}});
 $("ex-q").addEventListener("blur",function(){if(!$("ex-q").value){$("ex-q").hidden=true;}});
