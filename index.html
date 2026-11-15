@@ -1345,11 +1345,8 @@ function medalsHTML(curWs){
     names.map(function(k){return '<tr><td>'+esc(k)+(k===S.me?" (tu)":"")+'</td><td>'+t[k].a+'</td><td>'+t[k].r+'</td><td>'+t[k].p+'</td><td>'+t[k].d+'</td></tr>';}).join("")+'</table></div>';
 }
 function premiHTML(){
-  var today=iso(new Date()),ws=weekStart(today),prev=addDaysIso(ws,-7);
-  var h='<div class="wk" style="margin-top:0">Settimana in corso<small>'+dmon(ws)+" – "+dmon(addDaysIso(ws,6))+' · provvisorio</small></div>'+awardsHTML(ws);
-  h+='<div class="wk">Settimana scorsa<small>'+dmon(prev)+" – "+dmon(addDaysIso(prev,6))+'</small></div>'+awardsHTML(prev);
-  h+=medalsHTML(ws);
-  return h;
+  var today=iso(new Date()),ws=weekStart(today);
+  return '<div class="wk" style="margin-top:0">Settimana in corso<small>'+dmon(ws)+" – "+dmon(addDaysIso(ws,6))+' · provvisorio</small></div>'+awardsHTML(ws);
 }
 
 /* ====== Amici ====== */
