@@ -1711,7 +1711,7 @@ var WZOPT=[
   ["inf","Zone da proteggere (facoltativo)",[["spalle","Spalle"],["ginocchia","Ginocchia"],["schiena","Schiena bassa"],["polsi","Polsi / gomiti"]]]
 ];
 function openWizard(){
-  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:[],eta:"",gymOn:!!loadGym()};
+  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:[],eta:"",gymOn:!!loadGym(),adv:false};
   wzOut=null;useConfirm=false;wzIB={open:false,vals:{},note:""};
   renderWizard();
 }
@@ -1750,18 +1750,33 @@ function applyIB(){
 function renderWizard(){
   var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi alle domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
   if(!wzOut){
-    html+='<button class="btn ghost full" type="button" data-act="goalopen" style="margin-top:12px">🎯 Scheda per un obiettivo (piegamenti, trazioni…)</button>';
-    html+=ibHTML();
+    var chipRow=function(o){
+      var r='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+(((o[0]==="att"||o[0]==="inf")?wz[o[0]].indexOf(c[0])>-1:String(wz[o[0]])===String(c[0]))?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
+      if(o[0]==="stile") r+='<div class="sub" style="margin-top:8px;color:var(--ink)">'+esc(STILI_D[wz.stile]||"")+'</div>';
+      if(o[0]==="giorni"&&styleWarn(wz.stile,wz.giorni)) r+='<div class="sub" style="margin-top:8px;color:var(--accent)">⚠️ '+esc(styleWarn(wz.stile,wz.giorni))+'</div>';
+      return r;
+    };
+    var ADV=["stile","inf"];
+    // base: poche domande (compresi gli attrezzi)
     WZOPT.forEach(function(o){
+      if(ADV.indexOf(o[0])>=0) return;
       if(o[0]==="att"&&loadGym()){
         if(wz.gymOn){html+='<label class="l" style="margin-top:14px">Attrezzi</label><div class="sub" style="color:var(--ink)">🏋️ Uso gli attrezzi della tua palestra.</div><button class="btn ghost small" type="button" data-act="gymoff" style="margin-top:6px">Ignora la lista</button>';return;}
         html+='<button class="btn ghost small" type="button" data-act="gymon" style="margin-top:14px">Usa la lista della mia palestra</button>';
       }
-      html+='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+(((o[0]==="att"||o[0]==="inf")?wz[o[0]].indexOf(c[0])>-1:String(wz[o[0]])===String(c[0]))?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
-      if(o[0]==="liv") html+='<label class="l" for="wz-eta" style="margin-top:14px">La tua età (facoltativa)</label><input id="wz-eta" type="text" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="es. 35" value="'+esc(String(wz.eta||""))+'"><div class="sub" style="margin-top:6px">Sotto i 18 o sopra i 50 anni riduco le serie e allungo il recupero, senza esercizi troppo tecnici.</div>';
-      if(o[0]==="stile") html+='<div class="sub" style="margin-top:8px;color:var(--ink)">'+esc(STILI_D[wz.stile]||"")+'</div>';
-      if(o[0]==="giorni"&&styleWarn(wz.stile,wz.giorni)) html+='<div class="sub" style="margin-top:8px;color:var(--accent)">⚠️ '+esc(styleWarn(wz.stile,wz.giorni))+'</div>';
+      html+=chipRow(o);
     });
+    // opzioni avanzate, chiuse di default
+    html+='<button class="btn ghost full" type="button" data-act="wzadv" aria-expanded="'+!!wz.adv+'" style="margin-top:18px">⚙️ Opzioni avanzate '+(wz.adv?"▴":"▾")+'</button>';
+    if(wz.adv){
+      html+='<div class="card" style="margin-top:8px">';
+      WZOPT.forEach(function(o){if(o[0]==="stile") html+=chipRow(o);});
+      WZOPT.forEach(function(o){if(o[0]==="inf") html+=chipRow(o);});
+      html+='<label class="l" for="wz-eta" style="margin-top:14px">La tua età (facoltativa)</label><input id="wz-eta" type="text" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="es. 35" value="'+esc(String(wz.eta||""))+'"><div class="sub" style="margin-top:6px">Sotto i 18 o sopra i 50 anni riduco le serie e allungo il recupero, senza esercizi troppo tecnici.</div>';
+      html+=ibHTML();
+      html+='<label class="l" style="margin-top:14px">Un movimento da conquistare</label><button class="btn ghost full" type="button" data-act="goalopen">🎯 Scheda per un obiettivo (corpo libero)</button><div class="sub" style="margin-top:6px">Percorso guidato verso piegamenti, trazioni, squat, plank o toccarsi i piedi.</div>';
+      html+='</div>';
+    }
     html+='<div class="sub" style="margin-top:14px">'+DISCL+'</div>';
     html+='<button class="btn full" type="button" data-act="wzgo" style="margin-top:10px">Proponi la scheda</button>';
   }else{
@@ -1985,6 +2000,7 @@ $("ov").addEventListener("click",function(e){
     if(a==="pkcustom") return addCustom();
     if(a==="ibtoggle"){wzIB.open=!wzIB.open;return renderWizard();}
     if(a==="ibapply") return applyIB();
+    if(a==="wzadv"){wz.adv=!wz.adv;return renderWizard();}
     if(a==="goalopen"){gSel=gSel||"push";return openGoal();}
     if(a==="goalmake"){
       var gk=gSel,gg=GOALS[gk],v,tg=gg.tdef;
