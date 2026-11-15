@@ -135,6 +135,11 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .wk small{font-family:var(--font-body);font-size:13px;color:var(--muted);margin-left:6px}
 .plist .pe{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
 .plist .pe:first-of-type{border-top:0}
+.plist .pe{align-items:center}
+.plist .pe .pt{display:flex;flex-direction:column;min-width:0;gap:1px}
+.plist .pe .pb{display:flex;gap:6px;flex:0 0 auto}
+.ic{width:40px;height:40px;border:1px solid var(--line);background:var(--bg);border-radius:10px;font-size:17px;cursor:pointer;padding:0;color:var(--ink)}
+.ic.on{background:var(--accent);border-color:var(--accent)}
 .plist .pe span:last-child{color:var(--muted);white-space:nowrap;font-size:14px;font-variant-numeric:tabular-nums}
 /* Scheda: giornate richiudibili e tasto rapido */
 .gh{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;padding:0;margin:14px 0 8px;font-family:var(--font-display);font-size:20px;color:var(--ink);cursor:pointer;text-align:left}
@@ -329,6 +334,8 @@ function rx(e){
   if(e.rec!==undefined&&e.rec!==""&&e.rec!==null) t+=(t?" · ":"")+"rec "+e.rec+" s";
   return t;
 }
+function exMin(s,rec){return s*(45+Math.max(rec,60))/60;} // 45 s di esecuzione + riposo (minimo 60 s) per ogni serie
+function dayMin(exs){var m=10;exs.forEach(function(e){m+=exMin(+e.s>0?+e.s:3,(e.rec!==undefined&&e.rec!==""&&e.rec!==null&&isFinite(+e.rec))?+e.rec:75);});return m;}
 function schedaStats(sch){
   var ex=0,sets=0,lvSum=0,mins=[];
   (sch||[]).forEach(function(g){
@@ -337,10 +344,9 @@ function schedaStats(sch){
     g.ex.forEach(function(e){
       var s=+e.s>0?+e.s:3;
       var rec=(e.rec!==undefined&&e.rec!==""&&e.rec!==null&&isFinite(+e.rec))?+e.rec:75;
-      rec=Math.max(rec,60); // pausa minima 1 minuto tra le serie
       var lb=libOf(e.n);
       var lv=+e.lv||(lb?lb.lv:1.5);
-      ex++;sets+=s;lvSum+=lv;m+=s*(45+rec)/60;
+      ex++;sets+=s;lvSum+=lv;m+=exMin(s,rec);
     });
     mins.push(m);
   });
@@ -379,11 +385,12 @@ var TNAME={FBA:"Giornata A",FBB:"Giornata B",FBC:"Giornata C",ALTOA:"Parte alta 
   BASSOA:"Parte bassa A (quadricipiti)",BASSOB:"Parte bassa B (femorali e glutei)",SPINTA:"Spinta",TRAZIONE:"Trazione",GAMBE:"Gambe"};
 var TUPPER={ALTOA:1,ALTOB:1,SPINTA:1,TRAZIONE:1};
 var PLAN={2:["FBA","FBB"],3:["FBA","FBB","FBC"],4:["ALTOA","BASSOA","ALTOB","BASSOB"],5:["SPINTA","TRAZIONE","GAMBE","ALTOB","BASSOB"]};
-var NEX={30:4,45:5,60:6,90:8};
 
-function presc(e,liv){
+function presc(e,liv,obi){
   var p;
-  if(liv==="principiante") p=e.c?{s:3,r:"10-12",rec:90}:{s:3,r:"12",rec:60};
+  if(obi==="forza") p=e.c?{s:liv==="principiante"?3:4,r:"6",rec:120}:{s:3,r:"8-10",rec:90};
+  else if(obi==="tono") p={s:3,r:"15",rec:60};
+  else if(liv==="principiante") p=e.c?{s:3,r:"10-12",rec:90}:{s:3,r:"12",rec:60};
   else if(liv==="intermedio") p=e.c?{s:4,r:"8-10",rec:90}:{s:3,r:"10-12",rec:60};
   else p=e.c?{s:4,r:"6-8",rec:120}:{s:4,r:"10-12",rec:60};
   if(e.mg==="Addome"||e.mg==="Polpacci") p.r="15";
@@ -418,14 +425,19 @@ function slotClass(g,focus){
   return low?0:(g==="Addome"?1:2);
 }
 function genScheda(p){
-  var N=NEX[p.durata];
+  var target=p.durata;
+  var avg=(function(){
+    var a1=presc({c:1,mg:"Petto"},p.liv,p.obi),a2=presc({c:0,mg:"Petto"},p.liv,p.obi);
+    return (exMin(a1.s,a1.rec)+exMin(a2.s,a2.rec))/2;
+  })();
+  var N=clamp(Math.round((target-10)/avg),3,12);
   var usedPlan={};
   var out=[];
   PLAN[p.giorni].forEach(function(key,di){
-    var slots=TPL[key].slice(),n=N;
+    var slots=TPL[key].slice(),n=N,tgt=target;
     if(p.giorni>=4&&p.focus!=="totale"){
       var up=!!TUPPER[key];
-      n=Math.max(3,N+(((p.focus==="alto")===up)?1:-1));
+      tgt=target+(((p.focus==="alto")===up)?6:-6);
     }else if(p.focus!=="totale"){
       var idx=slots.map(function(s,i){return {s:s,i:i,c:slotClass(s.replace("*",""),p.focus)};});
       idx.sort(function(a,b){return a.c-b.c||a.i-b.i;});
@@ -439,22 +451,66 @@ function genScheda(p){
       }
       slots=sorted;
     }
-    slots=slots.slice(0,n);
     var cnt={},used={},exs=[];
-    slots.forEach(function(slot){
+    function slotAt(i){return i<slots.length?slots[i]:TPL[key][i%TPL[key].length];}
+    function addOne(){
+      var slot=slotAt(exs.length);
       var post=slot.indexOf("*")>-1,mg=slot.replace("*","");
-      var occ=cnt[slot]||0;cnt[slot]=occ+1;
+      var occ=cnt[slot]||0;
       var e=pickEx(mg,post,occ,used,usedPlan,p);
       if(!e||usedPlan[e.n]){
         var alt=LIB.filter(function(x){return x.mg===mg&&!usedPlan[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c");});
         if(!alt.length) alt=LIB.filter(function(x){return !usedPlan[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c")&&(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]);});
         e=alt.length?alt[Math.floor(Math.random()*alt.length)]:null;
       }
-      if(!e) return;
+      if(!e){
+        // esercizi finiti: riuso uno già presente in altre giornate (mai due volte nella stessa)
+        var re=LIB.filter(function(x){return !used[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c")&&(x.mg===mg||(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]));});
+        re.sort(function(a1,b1){return (b1.mg===mg)-(a1.mg===mg);});
+        e=re.length?re[0]:null;
+      }
+      if(!e) return false;
+      cnt[slot]=occ+1;
       used[e.n]=1;usedPlan[e.n]=1;
-      var pr=presc(e,p.liv);
-      exs.push({id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec});
-    });
+      var pr=presc(e,p.liv,p.obi);
+      exs.push({id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec,_slot:slot});
+      return true;
+    }
+    function dropOne(){
+      var e=exs.pop();
+      delete used[e.n];delete usedPlan[e.n];cnt[e._slot]--;
+    }
+    for(var i=0;i<n;i++) if(!addOne()) break;
+    // porto la durata stimata il più vicino possibile a quella scelta
+    var guard=0;
+    while(exs.length<10&&guard++<12){
+      var m0=dayMin(exs);
+      if(!addOne()) break;
+      var m1=dayMin(exs);
+      if(Math.abs(m1-tgt)<Math.abs(m0-tgt)) continue;
+      dropOne();break;
+    }
+    guard=0;
+    while(exs.length>3&&guard++<12){
+      var m2=dayMin(exs),last=exs[exs.length-1];
+      var m3=m2-exMin(+last.s,+last.rec);
+      if(Math.abs(m3-tgt)<Math.abs(m2-tgt)) dropOne(); else break;
+    }
+    // sedute lunghe: se non bastano gli esercizi, aggiungo una serie ai principali
+    guard=0;
+    while(dayMin(exs)<tgt-6&&guard++<40){
+      var grown=false;
+      for(var gi=0;gi<exs.length&&dayMin(exs)<tgt-3;gi++){if(exs[gi].s<4){exs[gi].s++;grown=true;}}
+      if(!grown) break;
+    }
+    // sedute brevissime: se anche con 3 esercizi si sfora, tolgo una serie dagli ultimi
+    guard=0;
+    while(dayMin(exs)>tgt+4&&guard++<20){
+      var cut=false;
+      for(var ci=exs.length-1;ci>=0&&dayMin(exs)>tgt+2;ci--){if(exs[ci].s>2){exs[ci].s--;cut=true;}}
+      if(!cut) break;
+    }
+    exs.forEach(function(e){delete e._slot;});
     out.push({id:uid(),t:"Giornata "+(di+1),ex:exs});
   });
   return out;
@@ -665,6 +721,87 @@ function renderEx(){
   $("ex-list").innerHTML=html;
 }
 
+
+/* ====== Consigli di esecuzione (sintesi generale scritta per l'app) ====== */
+var TIPS={
+"Chest press":["Schiena e testa appoggiate, scapole indietro e in basso. Spingi senza bloccare del tutto i gomiti e torna lento.","Spalle verso le orecchie, rimbalzi in basso, sedile regolato male."],
+"Panca piana con manubri":["Scapole chiuse, piedi a terra. Scendi controllato fino ai lati del petto, gomiti non troppo larghi.","Gomiti a 90° rispetto al busto, schiena molto inarcata, manubri che rimbalzano."],
+"Panca piana con bilanciere":["Scapole chiuse, piedi stabili, bilanciere al petto basso e spinta in linea leggermente obliqua verso le spalle.","Staccare i glutei, spalle verso le orecchie, rimbalzo sul petto, polsi piegati all'indietro."],
+"Panca inclinata con manubri":["Panca a circa 30°, scapole ferme, spingi in alto e leggermente verso l'interno.","Panca troppo alta (lavorano le spalle), gomiti troppo larghi."],
+"Pec deck":["Schiena appoggiata, gomiti all'altezza delle spalle, chiudi senza sbattere i pesi e controlla l'apertura.","Aprire troppo indietro, spalle che vanno in avanti, peso eccessivo."],
+"Croci ai cavi":["Busto fermo, gomiti leggermente flessi e fissi, porta le mani davanti al petto con un arco ampio.","Trasformarle in una spinta piegando i gomiti, dondolare con il busto."],
+"Croci con manubri":["Gomiti leggermente flessi, scendi fino a sentire l'allungamento del petto e risali come in un abbraccio.","Scendere troppo, cambiare l'angolo dei gomiti, carico troppo alto."],
+"Lat machine":["Petto in fuori, tira la sbarra verso la parte alta del petto portando i gomiti in basso, risali lentamente.","Dondolare con il busto, tirare dietro la nuca, spalle alzate."],
+"Lat machine presa neutra":["Tira con i gomiti verso i fianchi, petto alto, scapole giù; risali fino a un buon allungamento.","Slancio con il busto, tirare solo con le braccia."],
+"Pulley basso":["Schiena neutra, tira verso l'addome portando i gomiti indietro e chiudi le scapole a fine corsa.","Dondolare avanti e indietro, spalle alzate, schiena arrotondata."],
+"Low row alla macchina":["Petto contro il supporto, tira i gomiti indietro, stringi un attimo le scapole e ritorna lento.","Staccare il petto, tirare con il collo o con le spalle in avanti."],
+"Rematore con manubrio":["Schiena neutra e busto stabile, porta il manubrio verso l'anca con il gomito vicino al corpo.","Ruotare il busto, tirare solo con il braccio, collo teso."],
+"Rematore con bilanciere":["Anche indietro, schiena neutra, bilanciere verso l'ombelico con gomiti vicini e addome attivo.","Schiena arrotondata, busto che si alza a ogni ripetizione, carico troppo alto."],
+"Trazioni assistite":["Spalle basse, parti con le braccia tese, porta il mento sopra la sbarra e scendi lento.","Spalle alzate, mezze ripetizioni, tenere sempre lo stesso aiuto: riducilo a poco a poco."],
+"Pullover ai cavi":["Braccia quasi tese, porta la barra dall'alto verso le cosce usando i dorsali, busto leggermente inclinato.","Piegare i gomiti, inarcare la schiena, strappare."],
+"Shoulder press":["Schienale appoggiato, spingi sopra la testa senza inarcare la schiena e scendi fino a gomiti a circa 90°.","Inarcare i lombi, spalle verso le orecchie, scendere di scatto."],
+"Lento avanti con manubri":["Addome compatto, gomiti leggermente davanti al busto, spingi in alto e scendi controllato.","Inarcare la schiena, usare le gambe, gomiti troppo larghi."],
+"Military press con bilanciere":["In piedi, glutei e addome contratti, spingi il bilanciere vicino al viso fino sopra la testa.","Inarcare i lombi, spingere con le gambe, polsi piegati."],
+"Alzate laterali":["Gomiti leggermente flessi, sali fino all'altezza delle spalle e scendi lento.","Slancio con il corpo, salire sopra le spalle, spalle verso le orecchie."],
+"Alzate laterali ai cavi":["Tensione continua, braccio di lato fino alle spalle, busto fermo, guida con il gomito.","Slancio, polso più alto del gomito, busto che dondola."],
+"Alzate posteriori":["Busto inclinato e schiena neutra, apri le braccia di lato portando i gomiti in alto.","Chiudere troppo le scapole, slancio con il busto."],
+"Reverse pec deck":["Petto sull'appoggio, apri le braccia indietro senza alzare le spalle e controlla il ritorno.","Spalle alzate, peso troppo alto, mezze ripetizioni."],
+"Face pull":["Corda all'altezza del viso, tira verso il viso aprendo i gomiti e ruotando le mani in fuori.","Tirare verso il petto, schiena inarcata, peso eccessivo."],
+"Curl bicipiti con manubri":["Gomiti fermi lungo i fianchi, sali ruotando il palmo verso l'alto e scendi lento fino quasi a estendere.","Dondolare, gomiti che vanno avanti, scendere di scatto."],
+"Curl bicipiti ai cavi":["Gomiti fissi, tensione continua, stringi in alto un attimo.","Spalle in avanti, busto che si inclina."],
+"Curl con bilanciere EZ":["Presa comoda, gomiti vicini ai fianchi, sali senza slancio.","Busto indietro, polsi piegati."],
+"Curl a martello":["Palmi uno verso l'altro, gomiti fermi, discesa controllata.","Slancio, gomiti in avanti."],
+"Curl alla macchina":["Regola il sedile, gomiti ben appoggiati, estendi quasi del tutto e sali controllato.","Alzare le spalle, staccare i gomiti, rimbalzare."],
+"Pushdown tricipiti con corda":["Gomiti fermi ai fianchi, estendi fino in fondo aprendo la corda e risali lentamente.","Gomiti che si allontanano, busto che spinge sulla corda."],
+"Pushdown tricipiti con barra":["Gomiti fermi ai fianchi, estendi completamente e risali lento.","Gomiti che si allontanano, usare il peso del corpo."],
+"Tricipiti alla macchina":["Schiena aderente, gomiti fermi, estendi completamente senza bloccare di scatto.","Spalle che avanzano, slancio."],
+"French press":["Gomiti puntati in alto e fermi, scendi con controllo ed estendi.","Gomiti che si aprono, carico troppo alto per i gomiti, schiena inarcata."],
+"Estensioni tricipiti sopra la testa":["Gomiti vicini alla testa e fermi, scendi dietro la testa con controllo e addome attivo.","Gomiti larghi, schiena inarcata, discesa troppo veloce."],
+"Leg press":["Schiena e glutei appoggiati, piedi a larghezza spalle, scendi con controllo e spingi con tutto il piede.","Staccare i glutei, ginocchia verso l'interno, bloccare le ginocchia in alto."],
+"Pressa orizzontale":["Schiena appoggiata, piedi a larghezza spalle, scendi controllato e spingi con tutto il piede.","Bacino che si stacca, ginocchia verso l'interno, estensione bloccata in alto."],
+"Hack squat":["Schiena appoggiata, piedi a media distanza, scendi controllato e spingi con tutto il piede.","Talloni che si staccano, ginocchia che cadono all'interno, rimbalzo sul fondo."],
+"Leg extension":["Regola lo schienale, estendi e stringi in alto, scendi lento.","Slancio, carico eccessivo, bloccare di scatto."],
+"Goblet squat":["Manubrio al petto, busto alto, scendi con le ginocchia in linea con i piedi e talloni a terra.","Busto che crolla in avanti, talloni che si alzano."],
+"Affondi con manubri":["Passo ampio il giusto, busto alto, scendi in verticale con il ginocchio sopra il piede.","Ginocchio che cede all'interno, passo troppo corto, spingere con il piede dietro."],
+"Affondi bulgari":["Piede dietro appoggiato, busto leggermente inclinato, scendi in verticale e spingi con il piede davanti.","Piede davanti troppo vicino, ginocchio che cede, caricare sulla gamba dietro."],
+"Squat con bilanciere":["Bilanciere sui trapezi, addome in tensione, scendi controllato e spingi con tutto il piede; ginocchia in linea con i piedi.","Schiena arrotondata, ginocchia verso l'interno, talloni che si staccano. Se sei alle prime volte fatti guardare da un trainer."],
+"Leg curl":["Anche appoggiate, fletti portando i talloni verso i glutei e scendi lento.","Bacino che si alza, slancio."],
+"Leg curl da seduto":["Schienale regolato, cuscino sopra le caviglie, tira indietro e ritorna lento.","Sollevare il bacino, slancio, escursione ridotta."],
+"Stacchi rumeni con manubri":["Ginocchia leggermente flesse, porta i fianchi indietro con i manubri vicini alle gambe e schiena neutra; risali spingendo i fianchi avanti.","Schiena arrotondata, scendere oltre la mobilità, manubri lontani dal corpo."],
+"Stacchi rumeni con bilanciere":["Ginocchia leggermente flesse, fianchi indietro, bilanciere vicino alle gambe e schiena neutra; risali spingendo i fianchi avanti.","Schiena arrotondata, bilanciere lontano dal corpo, carico troppo alto."],
+"Hip thrust alla macchina":["Mento verso il petto, spingi con i talloni e in alto contrai i glutei con il bacino in posizione neutra.","Inarcare i lombi, spingere senza controllo."],
+"Hip thrust":["Scapole sulla panca, piedi a terra, spingi con i talloni fino ad avere le tibie quasi verticali.","Lombi molto inarcati, piedi troppo lontani o troppo vicini."],
+"Abductor machine":["Schiena appoggiata, apri le gambe in modo controllato e torna lentamente.","Rimbalzare, spingere con la schiena."],
+"Calci ai cavi":["Busto stabile, calcia indietro con la gamba quasi tesa, stringi il gluteo e torna controllato.","Inarcare la schiena, slancio, calcio troppo alto."],
+"Step-up con manubri":["Piede tutto sul gradino, spingi con la gamba sopra e scendi controllato.","Spingere con la gamba che resta a terra, busto che crolla in avanti."],
+"Sumo squat con manubrio":["Piedi larghi con le punte in fuori, manubrio tra le gambe e busto alto.","Ginocchia che cedono all'interno, schiena arrotondata."],
+"Calf in piedi":["Sali sulla punta il più possibile e scendi fino a sentire l'allungamento.","Mezze escursioni, rimbalzi."],
+"Calf seduto":["Sali sulla punta il più possibile e scendi fino a sentire l'allungamento.","Mezze escursioni, rimbalzi."],
+"Calf alla leg press":["Punte sul bordo, spingi con le caviglie a ginocchia quasi tese ma non bloccate.","Spingere con le ginocchia, perdere il controllo in discesa."],
+"Crunch ai cavi":["Fletti la colonna avvicinando le costole al bacino, senza tirare con le braccia.","Tirare con le braccia, spingere i fianchi indietro."],
+"Ab machine":["Schiena aderente, porta il busto in avanti espirando in chiusura.","Spingere con le braccia, carico eccessivo."],
+"Rotazioni ai cavi":["Anche ferme, ruota il tronco con braccia quasi tese e controlla il ritorno.","Muovere le anche, slancio."],
+"Crunch con disco":["Piedi appoggiati, solleva spalle e petto espirando, disco sul petto.","Tirare il collo con le mani, sollevare tutta la schiena."]
+};
+var TIPS_MG={
+ Petto:["Scapole chiuse, spalle basse, movimento lento e controllato.","Spalle verso le orecchie, rimbalzi, carico troppo alto."],
+ Schiena:["Petto alto, tira con i gomiti e chiudi le scapole, ritorno lento.","Slancio con il busto, schiena arrotondata."],
+ Spalle:["Addome compatto, movimento controllato, senza alzare le spalle verso le orecchie.","Slancio, inarcare la schiena, carico eccessivo."],
+ Bicipiti:["Gomiti fermi, salita e discesa controllate.","Dondolare, gomiti che si spostano."],
+ Tricipiti:["Gomiti fermi, estensione completa e ritorno lento.","Slancio, gomiti che si aprono."],
+ Quadricipiti:["Piedi ben appoggiati, ginocchia in linea con i piedi, discesa controllata.","Ginocchia verso l'interno, talloni che si alzano, rimbalzi."],
+ Femorali:["Movimento controllato, schiena neutra, senti l'allungamento dietro la coscia.","Slancio, schiena arrotondata, bacino che si alza."],
+ Glutei:["Bacino stabile, spingi con i talloni e contrai il gluteo, schiena non inarcata.","Inarcare i lombi, slancio."],
+ Polpacci:["Escursione completa, in alto pausa breve.","Mezze ripetizioni, rimbalzi."],
+ Addome:["Movimento corto e controllato, espira in chiusura.","Tirare con le braccia o con il collo, slancio."]
+};
+function tipsFor(name){
+  var t=TIPS[name];
+  if(!t){var lb=libOf(name);t=(lb&&TIPS[lb.n])||(lb&&TIPS_MG[lb.mg])||null;}
+  if(!t){var e=myExObj(name);if(e&&e.mg&&TIPS_MG[e.mg]) t=TIPS_MG[e.mg];}
+  return t||["Scegli un carico con cui controlli tutto il movimento, senza slancio. Se non conosci l'esercizio, guarda un video o chiedi al trainer.","Slancio, mezze ripetizioni, carico troppo alto per la tecnica."];
+}
+
 /* ====== Grafico ====== */
 function chartSVG(h){
   var W=320,H=170,L=34,R=14,T=14,B=26;
@@ -695,9 +832,10 @@ function chartSVG(h){
 }
 
 /* ====== Finestre (sheet) ====== */
+var wzIB={open:false,vals:{},note:""};
 var sedit=null,curEx="",pk=null,wz=null,wzOut=null,curFriend="",cpConfirm=false,useConfirm=false;
 function openSheet(html){$("sheet").innerHTML=html;$("ov").hidden=false;}
-function closeSheet(){$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;curFriend="";cpConfirm=false;useConfirm=false;}
+function closeSheet(){$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
 function closeBtn(){return '<button class="btn ghost small" type="button" data-act="close">Chiudi</button>';}
 
 function openDetail(name){
@@ -711,7 +849,10 @@ function openDetail(name){
   else if(h.length===1) html+='<div class="sub">Un solo dato per ora.</div>';
   else html+='<div class="sub">Ancora nessun dato.</div>';
   html+='</div>'+closeBtn()+'</div>';
-  html+='<a class="btn ghost small" style="display:inline-block;margin-top:10px;text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/results?search_query='+encodeURIComponent(name+" esecuzione corretta")+'">▶ Come si fa</a>';
+  var tp=tipsFor(name),qn=encodeURIComponent(name);
+  html+='<div class="row" style="margin-top:10px;flex-wrap:wrap"><a class="btn ghost small" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="https://www.youtube.com/results?search_query='+encodeURIComponent(name+" esecuzione corretta")+'">▶ Come si fa</a><button class="btn ghost small" type="button" data-act="tips">💡 Consigli</button></div>'+
+    '<div class="card" id="tips" hidden style="margin-top:10px"><div style="font-weight:700;margin-bottom:4px">Esecuzione</div><div>'+esc(tp[0])+'</div><div style="font-weight:700;margin:12px 0 4px">Da evitare</div><div>'+esc(tp[1])+'</div>'+
+    '<div class="sub" style="margin-top:12px">Sintesi generale scritta per l\'app. Per le guide complete di Project inVictus: <a href="https://www.google.com/search?q='+encodeURIComponent("site:projectinvictus.it "+name+" esecuzione errori comuni")+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">guide</a> · <a href="https://www.youtube.com/results?search_query='+encodeURIComponent("Project inVictus "+name)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">video</a></div></div>';
   html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
@@ -1110,28 +1251,61 @@ function addCustom(){
 var WZOPT=[
   ["giorni","Allenamenti a settimana",[[2,"2"],[3,"3"],[4,"4"],[5,"5"]]],
   ["durata","Durata di ogni allenamento",[[30,"30 min"],[45,"45 min"],[60,"60 min"],[90,"90 min"]]],
+  ["obi","Il tuo obiettivo",[["forza","Forza"],["massa","Massa muscolare"],["tono","Definizione / tonificare"]]],
   ["focus","Su cosa vuoi puntare",[["totale","Corpo intero"],["alto","Più parte alta"],["basso","Più parte bassa"]]],
   ["liv","La tua esperienza",[["principiante","Principiante"],["intermedio","Intermedio"],["avanzato","Avanzato"]]],
   ["att","Attrezzi che usi",[["macchine","Solo macchine e cavi"],["liberi","Anche pesi liberi"]]]
 ];
 function openWizard(){
-  wz={giorni:3,durata:45,focus:"totale",liv:"principiante",att:"macchine"};
-  wzOut=null;useConfirm=false;
+  wz={giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:"macchine"};
+  wzOut=null;useConfirm=false;wzIB={open:false,vals:{},note:""};
+  renderWizard();
+}
+var IBF=[["ib-eta","Età"],["ib-peso","Peso (kg)"],["ib-grasso","Grasso corporeo (%)"],["ib-musc","Massa muscolo scheletrico (kg)"],["ib-cgr","Controllo del grasso (kg, con il segno −)"],["ib-cmu","Controllo del muscolo (kg)"]];
+function ibHTML(){
+  var h='<div class="card" style="margin-top:14px;padding:12px 14px"><button class="chip'+(wzIB.open?" on":"")+'" type="button" data-act="ibtoggle">📋 Parto dal mio referto InBody</button>';
+  if(wzIB.open){
+    h+='<div class="sub" style="margin-top:10px">Copia dal referto i valori che vuoi usare (anche solo alcuni). Restano solo in questa finestra: non vengono salvati.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    IBF.forEach(function(f){h+='<div><label class="l" for="'+f[0]+'" style="margin-top:8px">'+f[1]+'</label><input id="'+f[0]+'" type="text" inputmode="decimal" autocomplete="off" value="'+esc(wzIB.vals[f[0]]||"")+'"></div>';});
+    h+='</div><div class="sub">Il «controllo» è nel riquadro «Controllo del Peso»: − se devi perdere, + se devi guadagnare.</div><button class="btn full small" type="button" data-act="ibapply" style="margin-top:10px">Imposta le risposte da questi dati</button>';
+  }
+  if(wzIB.note) h+='<div class="sub" style="margin-top:10px;color:var(--ink)">'+esc(wzIB.note)+'</div>';
+  return h+'</div>';
+}
+function applyIB(){
+  function num(id){var v=parseFloat(String(wzIB.vals[id]||"").replace(",","."));return isFinite(v)?v:null;}
+  var pct=num("ib-grasso"),cg=num("ib-cgr"),cm=num("ib-cmu");
+  if(pct===null&&cg===null&&cm===null){wzIB.note="Inserisci almeno il grasso corporeo (%) oppure il controllo del grasso o del muscolo.";return renderWizard();}
+  var lose=cg!==null?Math.max(0,-cg):0,gain=cm!==null?Math.max(0,cm):0;
+  if(cg===null&&pct!==null&&pct>=25) lose=3; // senza il controllo del grasso: stima prudente
+  var why=[];
+  if(gain>=2){wz.obi="massa";why.push("devi mettere su circa "+fmt(gain)+" kg di muscolo");}
+  else if(lose>=3){wz.obi="tono";why.push("hai circa "+fmt(lose)+" kg di grasso da perdere");}
+  else if(pct!==null&&pct<=12){wz.obi="massa";why.push("il grasso è già basso");}
+  else{wz.obi="massa";why.push("la composizione è equilibrata");}
+  var extra=[];
+  if(lose>=3){
+    if(wz.giorni<3){wz.giorni=3;extra.push("3 allenamenti a settimana");}
+    if(wz.durata<45){wz.durata=45;extra.push("almeno 45 minuti");}
+  }
+  var nm={massa:"Massa muscolare",tono:"Definizione / tonificare"}[wz.obi];
+  wzIB.note="Ho impostato: obiettivo «"+nm+"» ("+why.join(", ")+")"+(extra.length?", "+extra.join(", "):"")+". Puoi cambiare le risposte qui sotto.";
   renderWizard();
 }
 function renderWizard(){
-  var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi a 5 domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
+  var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi a 6 domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
   if(!wzOut){
+    html+=ibHTML();
     WZOPT.forEach(function(o){
       html+='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+(String(wz[o[0]])===String(c[0])?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
     });
     html+='<button class="btn full" type="button" data-act="wzgo" style="margin-top:18px">Proponi la scheda</button>';
   }else{
     var st=schedaStats(wzOut);
-    html+='<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div>';
-    wzOut.forEach(function(g){
+    html+='<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div><div class="sub">🔄 cambia l\'esercizio · 🔒 lo tiene quando premi Rigenera</div>';
+    wzOut.forEach(function(g,gi){
       html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> <span>'+esc(g.t)+(mgLine(g)?' <span class="gs">· '+esc(mgLine(g))+'</span>':'')+'</span></div><div class="card plist" style="padding:6px 14px">'+
-        g.ex.map(function(e){return '<div class="pe"><span>'+esc(e.n)+'</span><span>'+esc(rx(e))+'</span></div>';}).join("")+'</div>';
+        g.ex.map(function(e,ei){var k=gi+"."+ei;return '<div class="pe"><div class="pt"><span>'+esc(e.n)+'</span><span>'+esc(rx(e))+'</span></div><div class="pb"><button class="ic" type="button" data-act="wzsw" data-k="'+k+'" aria-label="Sostituisci '+esc(e.n)+'">🔄</button><button class="ic'+(e.lk?" on":"")+'" type="button" data-act="wzlk" data-k="'+k+'" aria-label="'+(e.lk?"Sblocca ":"Blocca ")+esc(e.n)+'">'+(e.lk?"🔒":"🔓")+'</button></div></div>';}).join("")+'</div>';
     });
     var has=mySchedaObj().some(function(g){return g.ex.length;});
     html+='<button class="btn full" type="button" data-act="wzuse" style="margin-top:8px">'+(useConfirm&&has?"Tocca ancora: sostituisce la tua scheda (i pesi restano)":"Usa questa scheda")+'</button>'+
@@ -1140,10 +1314,54 @@ function renderWizard(){
   }
   openSheet(html);
 }
+function wzNames(){
+  var m={};
+  (wzOut||[]).forEach(function(g){g.ex.forEach(function(e){m[norm(e.n)]=1;});});
+  return m;
+}
+function swapWizEx(gi,ei){
+  var day=wzOut[gi],cur=day&&day.ex[ei];
+  if(!cur) return false;
+  var used=wzNames(),post=/posteriori|Reverse|Face/.test(cur.n);
+  function pool(strictAtt,strictLv){
+    return LIB.filter(function(e){
+      if(e.mg!==cur.mg||used[norm(e.n)]) return false;
+      if(/posteriori|Reverse|Face/.test(e.n)!==post) return false;
+      if(strictAtt&&wz.att==="macchine"&&e.eq!=="m"&&e.eq!=="c") return false;
+      if(strictLv&&wz.liv==="principiante"&&e.lv>2) return false;
+      return true;
+    });
+  }
+  var c=pool(true,true);
+  if(!c.length) c=pool(true,false);
+  if(!c.length) return false;
+  var e=c[Math.floor(Math.random()*c.length)],pr=presc(e,wz.liv,wz.obi);
+  day.ex[ei]={id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec};
+  return true;
+}
+function regenKeepLocks(){
+  var old=wzOut,nw=genScheda(wz);
+  if(old) nw.forEach(function(g,gi){
+    if(!old[gi]) return;
+    g.ex.forEach(function(e,ei){var o=old[gi].ex[ei];if(o&&o.lk) g.ex[ei]=o;});
+  });
+  wzOut=nw;
+  // se un esercizio non bloccato ripete uno bloccato (o un altro), lo cambio
+  var seen={};
+  wzOut.forEach(function(g){g.ex.forEach(function(e){if(e.lk) seen[norm(e.n)]=1;});});
+  wzOut.forEach(function(g,gi){g.ex.forEach(function(e,ei){
+    if(e.lk) return;
+    if(seen[norm(e.n)]){
+      swapWizEx(gi,ei);
+    }
+    seen[norm(g.ex[ei].n)]=1;
+  });});
+}
 function useWizardScheda(){
   var has=mySchedaObj().some(function(g){return g.ex.length;});
   if(has&&!useConfirm){useConfirm=true;renderWizard();return;}
-  var sch=wzOut;
+  var sch=cloneScheda(wzOut);
+  sch.forEach(function(g){g.ex.forEach(function(e){delete e.lk;});});
   $("sheet").querySelector("#wz-note").textContent="Salvo…";
   saveMyScheda(sch,[]).then(function(){
     closeSheet();draft=null;renderAll();
@@ -1268,6 +1486,7 @@ $("ov").addEventListener("click",function(e){
     var a=b.dataset.act;
     if(a==="close") return closeSheet();
     if(a==="addw") return addWeight();
+    if(a==="tips"){var tpn=$("tips");if(tpn)tpn.hidden=!tpn.hidden;return;}
     if(a==="ssave") return saveSession();
     if(a==="sdel"){
       if(!sedit.confirmDel){sedit.confirmDel=true;renderSessionSheet();return;}
@@ -1278,8 +1497,19 @@ $("ov").addEventListener("click",function(e){
       return copyFriendScheda();
     }
     if(a==="pkcustom") return addCustom();
+    if(a==="ibtoggle"){wzIB.open=!wzIB.open;return renderWizard();}
+    if(a==="ibapply") return applyIB();
     if(a==="wzgo"){wzOut=genScheda(wz);useConfirm=false;return renderWizard();}
-    if(a==="wzregen"){wzOut=genScheda(wz);useConfirm=false;return renderWizard();}
+    if(a==="wzregen"){regenKeepLocks();useConfirm=false;return renderWizard();}
+    if(a==="wzsw"||a==="wzlk"){
+      var kk=b.dataset.k.split("."),gi2=+kk[0],ei2=+kk[1];
+      if(a==="wzlk"&&wzOut[gi2]&&wzOut[gi2].ex[ei2]) wzOut[gi2].ex[ei2].lk=!wzOut[gi2].ex[ei2].lk;
+      var okSw=true;
+      if(a==="wzsw") okSw=swapWizEx(gi2,ei2);
+      useConfirm=false;renderWizard();
+      if(!okSw&&$("wz-note")) $("wz-note").textContent="Non ho altre alternative per questo esercizio con le tue risposte.";
+      return;
+    }
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
@@ -1302,6 +1532,7 @@ $("ov").addEventListener("click",function(e){
 });
 $("ov").addEventListener("input",function(e){
   if(pk&&e.target.id==="pk-q"){pk.q=e.target.value;renderPicker();}
+  if(wz&&e.target.id&&e.target.id.indexOf("ib-")===0) wzIB.vals[e.target.id]=e.target.value;
 });
 $("ov").addEventListener("change",function(e){
   var t=e.target;
