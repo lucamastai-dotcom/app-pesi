@@ -147,7 +147,9 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .exw .ex{margin-bottom:0;flex:1;min-width:0}
 .qk{flex:0 0 52px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;font:700 22px var(--font-body);cursor:pointer}
 .qk.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.exa{display:flex;gap:8px;margin:4px 0 6px}
+.exa{display:flex;gap:8px;margin:18px 0 6px}
+.sech{margin:22px 2px 6px;font:600 13px/1 var(--font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sech:first-child{margin-top:12px}
 .exa .btn{flex:1}
 /* Timer (tab Pausa, per ora nascosto) */
 .tbar{position:relative;overflow:hidden;background:var(--navy);color:#fff;border-radius:14px;border-top:3px solid var(--accent);padding:12px 14px;margin:10px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -876,14 +878,19 @@ function renderEx(){
   $("trend").innerHTML=trendHTML();
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
-  var html="";
+  var html="",std="",obj="";
+  function isObj(g){return /^Obiettivo/.test(g.t||"");}
   sch.forEach(function(g,gi){
     var list=g.ex.filter(function(e){return !q||norm(e.n).indexOf(q)>-1;});
     if(!list.length) return;
     var key=g.id||("i"+gi),open=!!q||!!openG[key];
-    html+='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span class="gtx"><span>'+esc(g.t||"Gruppo")+'</span>'+(mgLine(g)?'<span class="gs">'+esc(mgLine(g))+'</span>':'')+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
-    if(open) html+=warmHTML(g)+list.map(exRow).join("");
+    var h='<button class="gh" type="button" data-g="'+esc(key)+'" aria-expanded="'+open+'"><b>'+esc(gBadge(g.t))+'</b><span class="gtx"><span>'+esc(g.t||"Gruppo")+'</span>'+(mgLine(g)?'<span class="gs">'+esc(mgLine(g))+'</span>':'')+'</span><span class="cnt">'+list.length+(list.length===1?" esercizio":" esercizi")+'<i>'+(open?"▾":"▸")+'</i></span></button>';
+    if(open) h+=warmHTML(g)+list.map(exRow).join("");
+    if(isObj(g)) obj+=h;else std+=h;
   });
+  if(obj){
+    html=(std?'<div class="sech">Scheda standard</div>'+std:'')+'<div class="sech">'+(std?'Schede per obiettivo':'Schede per obiettivo')+'</div>'+obj;
+  }else html=std;
   if(!html){
     html=sch.length?'<div class="empty">Nessun esercizio trovato.</div>':'<div class="empty">La tua scheda è vuota.<br>Toccando Genera scheda ti propongo una scheda, oppure con Modifica scheda la scrivi tu.</div>';
   }
