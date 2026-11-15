@@ -231,6 +231,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
     <div id="trend"></div>
     <div class="exa"><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button><button class="btn small" type="button" data-exa="wizard">Genera scheda</button></div>
+    <button class="btn ghost small" type="button" data-exa="gym" id="gym-btn" style="width:100%;margin-top:8px">🏋️ La mia palestra</button>
     <div id="ex-list"></div>
   </section>
   <section id="v-ses" hidden><div id="ses-list"></div></section>
@@ -447,18 +448,34 @@ var INJ={
   polsi:/Curl con bilanciere|bilanciere EZ|French|Dip alla|Panca stretta|Panca Scott|sopra la testa|Kickback|Panca piana con bilanciere/
 };
 var TECH=/Stacco da terra|Good morning|Rollout/;
-var genCtx={inf:[],eta:null};
+var genCtx={inf:[],eta:null,gym:null};
+/* ====== La mia palestra: attrezzi disponibili (salvati sul telefono) ====== */
+var GYM_SHARED=[["manubri","Manubri"],["bilanciere","Bilanciere con dischi"],["rack","Rack / gabbia (squat, military)"],["panca","Panca regolabile"],["cavi","Cavi (torre o doppia puleggia)"],["disco","Dischi (per il crunch)"]];
+var GYM_PANCA=/Panca|inclinat|Scott|concentrato|Pullover con manubrio|Step-up|Croci con manubri|Hip thrust$|Glute bridge|Rematore su panca/;
+var GYM_RACK=/Squat con bilanciere|Front squat|Military|Squat sumo con bilanciere|Panca piana con bilanciere|Panca inclinata con bilanciere|Panca stretta/;
+function reqKeys(e){
+  if(e.eq==="m") return [e.n];
+  if(e.eq==="c") return ["cavi"];
+  var k=e.n==="Crunch con disco"?["disco"]:[e.eq==="b"?"bilanciere":"manubri"];
+  if(GYM_PANCA.test(e.n)) k.push("panca");
+  if(e.eq==="b"&&GYM_RACK.test(e.n)) k.push("rack");
+  return k;
+}
+function gymOkWith(e,keys){return reqKeys(e).every(function(k){return keys.indexOf(k)>-1;});}
+function loadGym(){try{var a=JSON.parse(lsGet("dpc-gym")||"null");return(Array.isArray(a)&&a.length)?a:null;}catch(x){return null;}}
 function etaNum(v){var n=parseInt(v,10);return(isFinite(n)&&n>=10&&n<=90)?n:null;}
 function ageSoft(){return genCtx.eta!==null&&(genCtx.eta>=50||genCtx.eta<18);}
-function setCtx(p){genCtx={inf:(p&&p.inf)||[],eta:etaNum(p&&p.eta)};}
+function setCtx(p){genCtx={inf:(p&&p.inf)||[],eta:etaNum(p&&p.eta),gym:(p&&p.gymOn)?loadGym():null};}
 function exOut(e){
   var i;
   for(i=0;i<genCtx.inf.length;i++){var r=INJ[genCtx.inf[i]];if(r&&r.test(e.n)) return true;}
   if(ageSoft()&&TECH.test(e.n)) return true;
+  if(genCtx.gym&&!gymOkWith(e,genCtx.gym)) return true;
   return false;
 }
 function eqOk(e,att){
   if(exOut(e)) return false;
+  if(genCtx.gym) return true; // con la lista della palestra la scelta degli attrezzi è già fatta
   var g=e.eq==="m"?"m":e.eq==="c"?"c":"l"; // l = pesi liberi (manubri e bilanciere)
   return !att||!att.length||att.indexOf(g)>-1;
 }
@@ -1044,7 +1061,7 @@ function chartSVG(h){
 var wzIB={open:false,vals:{},note:""};
 var sedit=null,curEx="",pk=null,wz=null,wzOut=null,curFriend="",cpConfirm=false,useConfirm=false;
 function openSheet(html){$("sheet").innerHTML=html;$("ov").hidden=false;}
-function closeSheet(){$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
+function closeSheet(){gymDraft=null;$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
 function closeBtn(){return '<button class="btn ghost small" type="button" data-act="close">Chiudi</button>';}
 
 /* serie di oggi: solo su questo telefono. c = serie selezionata (1..N), N+1 = tutte fatte */
@@ -1070,6 +1087,34 @@ function setSerie(name,k){
   if(st.ex[name]>N+1) st.ex[name]=N+1;
   lsSet("dpc-serie",JSON.stringify(st));
   var el=$("srow");if(el) el.innerHTML=serieHTML(name);
+}
+var gymDraft=null;
+function gymGroups(){var g=[];LIB.forEach(function(e){if(g.indexOf(e.mg)<0)g.push(e.mg);});return g;}
+function renderGym(){
+  var n=LIB.filter(function(e){return gymOkWith(e,gymDraft);}).length,saved=!!loadGym();
+  var chip=function(k,l){return '<button type="button" class="chip'+(gymDraft.indexOf(k)>-1?" on":"")+'" data-gk="'+esc(k)+'" aria-pressed="'+(gymDraft.indexOf(k)>-1)+'">'+esc(l)+'</button>';};
+  var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>La mia palestra</h2><div class="sub">Gira per la sala e spunta quello che c\'è. Il generatore userà solo gli esercizi fattibili con questi attrezzi.</div></div>'+closeBtn()+'</div>';
+  h+='<div class="row" style="margin-top:10px"><button class="btn ghost small" type="button" data-gact="all" style="flex:1">Spunta tutto</button><button class="btn ghost small" type="button" data-gact="none" style="flex:1">Togli tutto</button></div>';
+  h+='<label class="l" style="margin-top:14px">Attrezzi liberi e cavi</label><div class="chips">'+GYM_SHARED.map(function(x){return chip(x[0],x[1]);}).join("")+'</div>';
+  gymGroups().forEach(function(g){
+    var ms=LIB.filter(function(e){return e.eq==="m"&&e.mg===g;});
+    if(!ms.length) return;
+    h+='<label class="l" style="margin-top:14px">Macchine · '+esc(g)+'</label><div class="chips">'+ms.map(function(e){return chip(e.n,e.n);}).join("")+'</div>';
+  });
+  h+='<div class="sub" style="margin-top:14px;color:var(--ink)">Esercizi fattibili: <b>'+n+'</b> su '+LIB.length+(n<20?'. Sono pochi: le schede avranno poca varietà.':'.')+'</div>';
+  h+='<button class="btn full" type="button" data-gact="save" style="margin-top:10px"'+(gymDraft.length?"":" disabled")+'>Salva la mia palestra</button>';
+  if(saved) h+='<button class="btn ghost full" type="button" data-gact="clear" style="margin-top:8px">Togli la lista (usa tutti gli attrezzi)</button>';
+  h+='<div class="sub" style="margin-top:10px">La lista resta su questo telefono.</div>';
+  var top=$("sheet")&&$("sheet").scrollTop;
+  openSheet(h);
+  if(top) $("sheet").scrollTop=top;
+}
+function openGym(){gymDraft=(loadGym()||[]).slice();renderGym();}
+function gymAct(a){
+  if(a==="all"){gymDraft=GYM_SHARED.map(function(x){return x[0];}).concat(LIB.filter(function(e){return e.eq==="m";}).map(function(e){return e.n;}));return renderGym();}
+  if(a==="none"){gymDraft=[];return renderGym();}
+  if(a==="save"){lsSet("dpc-gym",JSON.stringify(gymDraft));closeSheet();setStatus("Palestra salvata.");return;}
+  if(a==="clear"){try{localStorage.removeItem("dpc-gym");}catch(x){}closeSheet();setStatus("Lista rimossa: il generatore usa di nuovo tutti gli attrezzi.");}
 }
 function timerHTML(){
   return '<div class="tbar" id="tbar" data-state="idle"><div class="tprog"><i id="tprog"></i></div><div class="tlabel" id="tlabel">Pausa</div><div class="tin">'+
@@ -1509,7 +1554,7 @@ var WZOPT=[
   ["inf","Zone da proteggere (facoltativo)",[["spalle","Spalle"],["ginocchia","Ginocchia"],["schiena","Schiena bassa"],["polsi","Polsi / gomiti"]]]
 ];
 function openWizard(){
-  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:[],eta:""};
+  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:[],eta:"",gymOn:!!loadGym()};
   wzOut=null;useConfirm=false;wzIB={open:false,vals:{},note:""};
   renderWizard();
 }
@@ -1550,6 +1595,10 @@ function renderWizard(){
   if(!wzOut){
     html+=ibHTML();
     WZOPT.forEach(function(o){
+      if(o[0]==="att"&&loadGym()){
+        if(wz.gymOn){html+='<label class="l" style="margin-top:14px">Attrezzi</label><div class="sub" style="color:var(--ink)">🏋️ Uso gli attrezzi della tua palestra.</div><button class="btn ghost small" type="button" data-act="gymoff" style="margin-top:6px">Ignora la lista</button>';return;}
+        html+='<button class="btn ghost small" type="button" data-act="gymon" style="margin-top:14px">Usa la lista della mia palestra</button>';
+      }
       html+='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+(((o[0]==="att"||o[0]==="inf")?wz[o[0]].indexOf(c[0])>-1:String(wz[o[0]])===String(c[0]))?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
       if(o[0]==="liv") html+='<label class="l" for="wz-eta" style="margin-top:14px">La tua età (facoltativa)</label><input id="wz-eta" type="text" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="es. 35" value="'+esc(String(wz.eta||""))+'"><div class="sub" style="margin-top:6px">Sotto i 18 o sopra i 50 anni riduco le serie e allungo il recupero, senza esercizi troppo tecnici.</div>';
       if(o[0]==="stile") html+='<div class="sub" style="margin-top:8px;color:var(--ink)">'+esc(STILI_D[wz.stile]||"")+'</div>';
@@ -1701,6 +1750,7 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-exa]"))){
     if(b.dataset.exa==="wizard")openWizard();
     if(b.dataset.exa==="edit"){draft=null;backConfirm=false;setTab("sc");}
+    if(b.dataset.exa==="gym")openGym();
     return;
   }
   if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
@@ -1776,6 +1826,8 @@ $("ov").addEventListener("click",function(e){
     if(a==="pkcustom") return addCustom();
     if(a==="ibtoggle"){wzIB.open=!wzIB.open;return renderWizard();}
     if(a==="ibapply") return applyIB();
+    if(a==="gymoff"){wz.gymOn=false;return renderWizard();}
+    if(a==="gymon"){wz.gymOn=true;return renderWizard();}
     if(a==="wzgo"){wzOut=genScheda(wz);useConfirm=false;return renderWizard();}
     if(a==="wzregen"){regenKeepLocks();useConfirm=false;return renderWizard();}
     if(a==="wzsw"||a==="wzlk"){
@@ -1790,6 +1842,8 @@ $("ov").addEventListener("click",function(e){
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
+  if((b=t.closest("[data-gk]"))&&gymDraft){var gi2=gymDraft.indexOf(b.dataset.gk);if(gi2>-1)gymDraft.splice(gi2,1);else gymDraft.push(b.dataset.gk);return renderGym();}
+  if((b=t.closest("[data-gact]"))&&gymDraft){return gymAct(b.dataset.gact);}
   if((b=t.closest("[data-sr]"))&&curEx){setSerie(curEx,+b.dataset.sr);return;}
   if((b=t.closest("[data-wz]"))&&wz){
     var kv=b.dataset.wz.split(":"),k=kv[0],v=kv[1];
