@@ -379,16 +379,48 @@ var TPL={
   BASSOB:["Femorali","Glutei","Quadricipiti","Glutei","Femorali","Polpacci","Addome","Quadricipiti"],
   SPINTA:["Petto","Spalle","Petto","Tricipiti","Spalle","Tricipiti","Petto","Spalle"],
   TRAZIONE:["Schiena","Schiena","Spalle*","Bicipiti","Schiena","Bicipiti","Addome","Schiena"],
-  GAMBE:["Quadricipiti","Femorali","Glutei","Quadricipiti","Polpacci","Femorali","Addome","Glutei"]
+  GAMBE:["Quadricipiti","Femorali","Glutei","Quadricipiti","Polpacci","Femorali","Addome","Glutei"],
+  MPETTO:["Petto","Petto","Petto","Tricipiti","Tricipiti","Petto","Tricipiti","Petto"],
+  MSCHIENA:["Schiena","Schiena","Schiena","Bicipiti","Bicipiti","Schiena","Bicipiti","Schiena"],
+  MSPALLE:["Spalle","Spalle","Spalle*","Spalle","Addome","Spalle*","Addome","Spalle"],
+  MBRACCIA:["Bicipiti","Tricipiti","Bicipiti","Tricipiti","Bicipiti","Tricipiti","Addome","Bicipiti"]
 };
 var TNAME={FBA:"Giornata A",FBB:"Giornata B",FBC:"Giornata C",ALTOA:"Parte alta A (petto e schiena)",ALTOB:"Parte alta B (spalle e braccia)",
   BASSOA:"Parte bassa A (quadricipiti)",BASSOB:"Parte bassa B (femorali e glutei)",SPINTA:"Spinta",TRAZIONE:"Trazione",GAMBE:"Gambe"};
-var TUPPER={ALTOA:1,ALTOB:1,SPINTA:1,TRAZIONE:1};
-var PLAN={2:["FBA","FBB"],3:["FBA","FBB","FBC"],4:["ALTOA","BASSOA","ALTOB","BASSOB"],5:["SPINTA","TRAZIONE","GAMBE","ALTOB","BASSOB"]};
+var TUPPER={ALTOA:1,ALTOB:1,SPINTA:1,TRAZIONE:1,MPETTO:1,MSCHIENA:1,MSPALLE:1,MBRACCIA:1};
+var FULLK={FBA:1,FBB:1,FBC:1};
+// Piani delle giornate per stile e numero di giorni
+var FULLP={2:["FBA","FBB"],3:["FBA","FBB","FBC"],4:["FBA","FBB","FBC","FBA"],5:["FBA","FBB","FBC","FBA","FBB"],6:["FBA","FBB","FBC","FBA","FBB","FBC"]};
+var ULP={2:["ALTOA","BASSOA"],3:["ALTOA","BASSOA","ALTOB"],4:["ALTOA","BASSOA","ALTOB","BASSOB"],5:["ALTOA","BASSOA","ALTOB","BASSOB","ALTOA"],6:["ALTOA","BASSOA","ALTOB","BASSOB","ALTOA","BASSOA"]};
+var PPLP={2:["SPINTA","TRAZIONE"],3:["SPINTA","TRAZIONE","GAMBE"],4:["SPINTA","TRAZIONE","GAMBE","SPINTA"],5:["SPINTA","TRAZIONE","GAMBE","SPINTA","TRAZIONE"],6:["SPINTA","TRAZIONE","GAMBE","SPINTA","TRAZIONE","GAMBE"]};
+var SPLITP={2:["ALTOA","BASSOA"],3:["SPINTA","TRAZIONE","GAMBE"],4:["MPETTO","MSCHIENA","MSPALLE","GAMBE"],5:["MPETTO","MSCHIENA","GAMBE","MSPALLE","MBRACCIA"],6:["MPETTO","MSCHIENA","BASSOA","MSPALLE","MBRACCIA","BASSOB"]};
+var PLANS={full:FULLP,ul:ULP,ppl:PPLP,split:SPLITP,hit:{2:FULLP[2],3:FULLP[3],4:ULP[4],5:ULP[5],6:ULP[6]},circ:FULLP};
+function planFor(stile,n){return (PLANS[stile]||FULLP)[n]||FULLP[3];}
+var STILI=[["full","Full body"],["ul","Alto / basso"],["ppl","Spinta · Trazione · Gambe"],["split","Un gruppo muscolare al giorno"],["hit","Alta intensità"],["circ","Circuito"]];
+var STILI_D={
+  full:"Ogni allenamento lavora tutto il corpo, così ogni muscolo è allenato 2-3 volte a settimana con carichi moderati. Ideale per iniziare o se hai pochi giorni.",
+  ul:"Due giorni di parte alta e due di parte bassa. Ogni muscolo è allenato 2 volte a settimana: buon equilibrio tra volume e recupero. Pensato per 4 giorni.",
+  ppl:"Un giorno di spinta (petto, spalle, tricipiti), uno di trazione (schiena, bicipiti) e uno di gambe. In 3 giorni ogni muscolo lavora una volta a settimana, in 6 due volte.",
+  split:"Un gruppo muscolare al giorno con tanti esercizi, allenato una volta a settimana. Pensato per 5-6 giorni.",
+  hit:"Pochi esercizi e poche serie, ma pesanti e vicine al limite, con riposi lunghi. Di solito 2-3 giorni a settimana. Adatto a chi ha già esperienza e buona tecnica.",
+  circ:"Esercizi uno dopo l'altro con pause brevi, per più giri. Consuma più energia e allena il fiato, con carichi più leggeri."
+};
+function styleWarn(st,n){
+  var m="";
+  if(st==="full"&&n>=4) m="Il full body con "+n+" giorni lascia poco recupero tra un allenamento e l'altro.";
+  if(st==="ul"&&n!==4) m=n===2?"Alto/basso è pensato per 4 giorni: con 2 ogni muscolo lavora una sola volta a settimana.":n===3?"Alto/basso è pensato per 4 giorni: con 3 l'ho adattato (alto, basso, alto).":"Alto/basso è pensato per 4 giorni: con "+n+" alcune giornate si ripetono.";
+  if(st==="ppl"&&n!==3&&n!==6) m=n===2?"Spinta/trazione/gambe è pensato per 3 o 6 giorni: con 2 mancano le gambe.":"Spinta/trazione/gambe è pensato per 3 o 6 giorni: con "+n+" alcune giornate si ripetono.";
+  if(st==="split"&&n<5) m="Un gruppo al giorno è pensato per 5-6 giorni: con "+n+" ho accorpato i gruppi muscolari.";
+  if(st==="hit"&&n>=4) m="L'alta intensità richiede molto recupero: di solito si fanno 2-3 giorni a settimana.";
+  if(st==="circ"&&n>=5) m="Con "+n+" circuiti a settimana ci sono pochi giorni di recupero.";
+  return m;
+}
 
-function presc(e,liv,obi){
+function presc(e,liv,obi,stile){
   var p;
-  if(obi==="forza") p=e.c?{s:liv==="principiante"?3:4,r:"6",rec:120}:{s:3,r:"8",rec:90};
+  if(stile==="hit") p=e.c?{s:2,r:"6",rec:180}:{s:2,r:"8",rec:120};
+  else if(stile==="circ") p={s:3,r:"15",rec:60};
+  else if(obi==="forza") p=e.c?{s:liv==="principiante"?3:4,r:"6",rec:120}:{s:3,r:"8",rec:90};
   else if(obi==="tono") p={s:3,r:"15",rec:60};
   else if(liv==="principiante") p=e.c?{s:3,r:"10",rec:90}:{s:3,r:"12",rec:60};
   else if(liv==="intermedio") p=e.c?{s:4,r:"8",rec:90}:{s:3,r:"12",rec:60};
@@ -403,10 +435,15 @@ function singleReps(r,name){
   var lo=+m[1],hi=+m[2],lb=libOf(name);
   return String(lb&&!lb.c?hi:lo);
 }
+var wzRelaxed=false;
+function eqOk(e,att){
+  var g=e.eq==="m"?"m":e.eq==="c"?"c":"l"; // l = pesi liberi (manubri e bilanciere)
+  return !att||!att.length||att.indexOf(g)>-1;
+}
 function pickEx(mg,post,occ,used,usedPlan,p){
   var base=LIB.filter(function(e){
     if(e.mg!==mg) return false;
-    if(p.att==="macchine"&&e.eq!=="m"&&e.eq!=="c") return false;
+    if(!eqOk(e,p.att)) return false;
     if(post&&!/posteriori|Reverse|Face/.test(e.n)) return false;
     return true;
   });
@@ -433,19 +470,21 @@ function slotClass(g,focus){
 }
 function genScheda(p){
   var target=p.durata;
+  wzRelaxed=false;
   var avg=(function(){
-    var a1=presc({c:1,mg:"Petto"},p.liv,p.obi),a2=presc({c:0,mg:"Petto"},p.liv,p.obi);
+    var a1=presc({c:1,mg:"Petto"},p.liv,p.obi,p.stile),a2=presc({c:0,mg:"Petto"},p.liv,p.obi,p.stile);
     return (exMin(a1.s,a1.rec)+exMin(a2.s,a2.rec))/2;
   })();
   var N=clamp(Math.round((target-10)/avg),3,12);
   var usedPlan={};
   var out=[];
-  PLAN[p.giorni].forEach(function(key,di){
-    var slots=TPL[key].slice(),n=N,tgt=target;
-    if(p.giorni>=4&&p.focus!=="totale"){
+  var maxEx=p.stile==="hit"?6:10,canGrow=p.stile!=="hit";
+  planFor(p.stile,p.giorni).forEach(function(key,di){
+    var slots=TPL[key].slice(),n=Math.min(N,maxEx),tgt=target;
+    if(!FULLK[key]&&p.focus!=="totale"){
       var up=!!TUPPER[key];
       tgt=target+(((p.focus==="alto")===up)?6:-6);
-    }else if(p.focus!=="totale"){
+    }else if(FULLK[key]&&p.focus!=="totale"){
       var idx=slots.map(function(s,i){return {s:s,i:i,c:slotClass(s.replace("*",""),p.focus)};});
       idx.sort(function(a,b){return a.c-b.c||a.i-b.i;});
       var sorted=idx.map(function(x){return x.s;}).slice(0,n);
@@ -466,20 +505,24 @@ function genScheda(p){
       var occ=cnt[slot]||0;
       var e=pickEx(mg,post,occ,used,usedPlan,p);
       if(!e||usedPlan[e.n]){
-        var alt=LIB.filter(function(x){return x.mg===mg&&!usedPlan[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c");});
-        if(!alt.length) alt=LIB.filter(function(x){return !usedPlan[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c")&&(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]);});
+        var alt=LIB.filter(function(x){return x.mg===mg&&!usedPlan[x.n]&&eqOk(x,p.att);});
+        if(!alt.length){ // nessun esercizio con gli attrezzi scelti per questo gruppo: uso l'attrezzo più vicino
+          alt=LIB.filter(function(x){return x.mg===mg&&!used[x.n];});
+          if(alt.length) wzRelaxed=true;
+        }
+        if(!alt.length) alt=LIB.filter(function(x){return !usedPlan[x.n]&&eqOk(x,p.att)&&(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]);});
         e=alt.length?alt[Math.floor(Math.random()*alt.length)]:null;
       }
       if(!e){
         // esercizi finiti: riuso uno già presente in altre giornate (mai due volte nella stessa)
-        var re=LIB.filter(function(x){return !used[x.n]&&(p.att!=="macchine"||x.eq==="m"||x.eq==="c")&&(x.mg===mg||(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]));});
+        var re=LIB.filter(function(x){return !used[x.n]&&eqOk(x,p.att)&&(x.mg===mg||(UPPER[x.mg]?!!UPPER[mg]:!UPPER[mg]));});
         re.sort(function(a1,b1){return (b1.mg===mg)-(a1.mg===mg);});
         e=re.length?re[0]:null;
       }
       if(!e) return false;
       cnt[slot]=occ+1;
       used[e.n]=1;usedPlan[e.n]=1;
-      var pr=presc(e,p.liv,p.obi);
+      var pr=presc(e,p.liv,p.obi,p.stile);
       exs.push({id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec,_slot:slot});
       return true;
     }
@@ -490,7 +533,7 @@ function genScheda(p){
     for(var i=0;i<n;i++) if(!addOne()) break;
     // porto la durata stimata il più vicino possibile a quella scelta
     var guard=0;
-    while(exs.length<10&&guard++<12){
+    while(exs.length<maxEx&&guard++<12){
       var m0=dayMin(exs);
       if(!addOne()) break;
       var m1=dayMin(exs);
@@ -505,7 +548,7 @@ function genScheda(p){
     }
     // sedute lunghe: se non bastano gli esercizi, aggiungo una serie ai principali
     guard=0;
-    while(dayMin(exs)<tgt-6&&guard++<40){
+    while(canGrow&&dayMin(exs)<tgt-6&&guard++<40){
       var grown=false;
       for(var gi=0;gi<exs.length&&dayMin(exs)<tgt-3;gi++){if(exs[gi].s<4){exs[gi].s++;grown=true;}}
       if(!grown) break;
@@ -1257,18 +1300,20 @@ function addCustom(){
 
 /* ---- Procedura guidata ---- */
 var WZOPT=[
-  ["giorni","Allenamenti a settimana",[[2,"2"],[3,"3"],[4,"4"],[5,"5"]]],
+  ["stile","Stile di allenamento",STILI],
+  ["giorni","Allenamenti a settimana",[[2,"2"],[3,"3"],[4,"4"],[5,"5"],[6,"6"]]],
   ["durata","Durata di ogni allenamento",[[30,"30 min"],[45,"45 min"],[60,"60 min"],[90,"90 min"]]],
   ["obi","Il tuo obiettivo",[["forza","Forza"],["massa","Massa muscolare"],["tono","Definizione / tonificare"]]],
-  ["focus","Su cosa vuoi puntare",[["totale","Corpo intero"],["alto","Più parte alta"],["basso","Più parte bassa"]]],
+  ["focus","Su cosa vuoi puntare",[["totale","Equilibrato"],["alto","Più parte alta"],["basso","Più parte bassa"]]],
   ["liv","La tua esperienza",[["principiante","Principiante"],["intermedio","Intermedio"],["avanzato","Avanzato"]]],
-  ["att","Attrezzi che usi",[["macchine","Solo macchine e cavi"],["liberi","Anche pesi liberi"]]]
+  ["att","Attrezzi che usi (puoi sceglierne più di uno)",[["m","Macchine"],["c","Cavi"],["l","Pesi liberi"]]]
 ];
 function openWizard(){
-  wz={giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:"macchine"};
+  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"]};
   wzOut=null;useConfirm=false;wzIB={open:false,vals:{},note:""};
   renderWizard();
 }
+var DISCL="ℹ️ Solo un suggerimento: fai vedere la scheda a un trainer prima di usarla.";
 var IBF=[["ib-eta","Età"],["ib-peso","Peso (kg)"],["ib-grasso","Grasso corporeo (%)"],["ib-musc","Massa muscolo scheletrico (kg)"],["ib-cgr","Controllo del grasso (kg, con il segno −)"],["ib-cmu","Controllo del muscolo (kg)"]];
 function ibHTML(){
   var h='<div class="card" style="margin-top:14px;padding:12px 14px"><button class="chip'+(wzIB.open?" on":"")+'" type="button" data-act="ibtoggle">📋 Parto dal mio referto InBody</button>';
@@ -1301,16 +1346,20 @@ function applyIB(){
   renderWizard();
 }
 function renderWizard(){
-  var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi a 6 domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
+  var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi a 7 domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
   if(!wzOut){
     html+=ibHTML();
     WZOPT.forEach(function(o){
-      html+='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+(String(wz[o[0]])===String(c[0])?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
+      html+='<label class="l" style="margin-top:14px">'+o[1]+'</label><div class="chips">'+o[2].map(function(c){return '<button type="button" class="chip'+((o[0]==="att"?wz.att.indexOf(c[0])>-1:String(wz[o[0]])===String(c[0]))?" on":"")+'" data-wz="'+o[0]+':'+c[0]+'">'+c[1]+'</button>';}).join("")+'</div>';
+      if(o[0]==="stile") html+='<div class="sub" style="margin-top:8px;color:var(--ink)">'+esc(STILI_D[wz.stile]||"")+'</div>';
+      if(o[0]==="giorni"&&styleWarn(wz.stile,wz.giorni)) html+='<div class="sub" style="margin-top:8px;color:var(--accent)">⚠️ '+esc(styleWarn(wz.stile,wz.giorni))+'</div>';
     });
-    html+='<button class="btn full" type="button" data-act="wzgo" style="margin-top:18px">Proponi la scheda</button>';
+    html+='<div class="sub" style="margin-top:14px">'+DISCL+'</div>';
+    html+='<button class="btn full" type="button" data-act="wzgo" style="margin-top:10px">Proponi la scheda</button>';
   }else{
     var st=schedaStats(wzOut);
-    html+='<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div><div class="sub">🔄 cambia l\'esercizio · 🔒 lo tiene quando premi Rigenera</div>';
+    var sw=styleWarn(wz.stile,wz.giorni),hitNew=(wz.stile==="hit"&&wz.liv==="principiante");
+    html+='<div class="sub" style="margin-top:12px;color:var(--ink)"><b>Stile:</b> '+esc((STILI.filter(function(x){return x[0]===wz.stile;})[0]||["",""])[1])+'</div>'+(sw?'<div class="sub" style="color:var(--accent)">⚠️ '+esc(sw)+'</div>':'')+(hitNew?'<div class="sub" style="color:var(--accent)">⚠️ Hai indicato di essere principiante: l\'alta intensità è più adatta a chi ha già esperienza e buona tecnica.</div>':'')+'<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div><div class="sub">🔄 cambia l\'esercizio · 🔒 lo tiene quando premi Rigenera</div>'+(wzRelaxed?'<div class="sub" style="color:var(--ink)">Per qualche gruppo muscolare non c\'erano esercizi con gli attrezzi scelti: ho usato l\'attrezzo più vicino.</div>':'');
     wzOut.forEach(function(g,gi){
       html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> <span>'+esc(g.t)+(mgLine(g)?' <span class="gs">· '+esc(mgLine(g))+'</span>':'')+'</span></div><div class="card plist" style="padding:6px 14px">'+
         g.ex.map(function(e,ei){var k=gi+"."+ei;return '<div class="pe"><div class="pt"><span>'+esc(e.n)+'</span><span>'+esc(rx(e))+'</span></div><div class="pb"><button class="ic" type="button" data-act="wzsw" data-k="'+k+'" aria-label="Sostituisci '+esc(e.n)+'">🔄</button><button class="ic'+(e.lk?" on":"")+'" type="button" data-act="wzlk" data-k="'+k+'" aria-label="'+(e.lk?"Sblocca ":"Blocca ")+esc(e.n)+'">'+(e.lk?"🔒":"🔓")+'</button></div></div>';}).join("")+'</div>';
@@ -1318,7 +1367,7 @@ function renderWizard(){
     var has=mySchedaObj().some(function(g){return g.ex.length;});
     html+='<button class="btn full" type="button" data-act="wzuse" style="margin-top:8px">'+(useConfirm&&has?"Tocca ancora: sostituisce la tua scheda (i pesi restano)":"Usa questa scheda")+'</button>'+
       '<div class="row" style="margin-top:8px"><button class="btn ghost" type="button" data-act="wzregen" style="flex:1">Rigenera</button><button class="btn ghost" type="button" data-act="wzback" style="flex:1">Cambia risposte</button></div>'+
-      '<div class="err" id="wz-note"></div>';
+      '<div class="err" id="wz-note"></div><div class="sub" style="margin-top:10px">'+DISCL+'</div>';
   }
   openSheet(html);
 }
@@ -1335,7 +1384,7 @@ function swapWizEx(gi,ei){
     return LIB.filter(function(e){
       if(e.mg!==cur.mg||used[norm(e.n)]) return false;
       if(/posteriori|Reverse|Face/.test(e.n)!==post) return false;
-      if(strictAtt&&wz.att==="macchine"&&e.eq!=="m"&&e.eq!=="c") return false;
+      if(strictAtt&&!eqOk(e,wz.att)) return false;
       if(strictLv&&wz.liv==="principiante"&&e.lv>2) return false;
       return true;
     });
@@ -1343,7 +1392,7 @@ function swapWizEx(gi,ei){
   var c=pool(true,true);
   if(!c.length) c=pool(true,false);
   if(!c.length) return false;
-  var e=c[Math.floor(Math.random()*c.length)],pr=presc(e,wz.liv,wz.obi);
+  var e=c[Math.floor(Math.random()*c.length)],pr=presc(e,wz.liv,wz.obi,wz.stile);
   day.ex[ei]={id:uid(),n:e.n,mg:e.mg,lv:e.lv,s:pr.s,r:pr.r,rec:pr.rec};
   return true;
 }
@@ -1523,7 +1572,11 @@ $("ov").addEventListener("click",function(e){
   }
   if((b=t.closest("[data-wz]"))&&wz){
     var kv=b.dataset.wz.split(":"),k=kv[0],v=kv[1];
-    wz[k]=(k==="giorni"||k==="durata")?+v:v;
+    if(k==="att"){
+      var ix=wz.att.indexOf(v);
+      if(ix>-1){if(wz.att.length>1) wz.att.splice(ix,1);} // almeno un attrezzo resta sempre scelto
+      else wz.att.push(v);
+    }else wz[k]=(k==="giorni"||k==="durata")?+v:v;
     return renderWizard();
   }
   if((b=t.closest("[data-pick]"))&&pk){addPicked(LIB[+b.dataset.pick]);return;}
