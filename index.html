@@ -279,7 +279,18 @@ var LIBRAW=[
   ["Leg curl","Femorali","m",1,0],["Leg curl da seduto","Femorali","m",1,0],["Stacchi rumeni con manubri","Femorali","d",2,1],["Stacchi rumeni con bilanciere","Femorali","b",3,1],
   ["Hip thrust alla macchina","Glutei","m",1,1],["Hip thrust","Glutei","b",2,1],["Abductor machine","Glutei","m",1,0],["Calci ai cavi","Glutei","c",2,0],["Step-up con manubri","Glutei","d",2,1],["Sumo squat con manubrio","Glutei","d",1,1],
   ["Calf in piedi","Polpacci","m",1,0],["Calf seduto","Polpacci","m",1,0],["Calf alla leg press","Polpacci","m",1,0],
-  ["Crunch ai cavi","Addome","c",1,0],["Ab machine","Addome","m",1,0],["Rotazioni ai cavi","Addome","c",2,0],["Crunch con disco","Addome","d",1,0]
+  ["Crunch ai cavi","Addome","c",1,0],["Ab machine","Addome","m",1,0],["Rotazioni ai cavi","Addome","c",2,0],["Crunch con disco","Addome","d",1,0],
+  ["Chest press inclinata","Petto","m",1,1],["Chest press ai cavi","Petto","c",2,1],["Croci ai cavi dal basso","Petto","c",2,0],["Croci inclinate con manubri","Petto","d",2,0],["Pullover con manubrio","Petto","d",2,0],["Panca inclinata con bilanciere","Petto","b",3,1],
+  ["Rematore alla macchina presa larga","Schiena","m",1,1],["Rematore ai cavi a un braccio","Schiena","c",2,1],["Lat machine a un braccio ai cavi","Schiena","c",2,1],["Rematore su panca inclinata con manubri","Schiena","d",2,1],["T-bar row","Schiena","b",2,1],
+  ["Alzate laterali alla macchina","Spalle","m",1,0],["Alzate frontali ai cavi","Spalle","c",1,0],["Alzate posteriori ai cavi","Spalle","c",2,0],["Arnold press","Spalle","d",2,1],["Alzate frontali con manubri","Spalle","d",1,0],["Scrollate con manubri","Spalle","d",1,0],
+  ["Panca Scott con bilanciere EZ","Bicipiti","b",2,0],["Curl con bilanciere","Bicipiti","b",2,0],["Curl ai cavi alti","Bicipiti","c",2,0],["Curl con corda ai cavi","Bicipiti","c",1,0],["Curl concentrato","Bicipiti","d",1,0],["Curl inclinato con manubri","Bicipiti","d",2,0],
+  ["Dip alla macchina","Tricipiti","m",1,1],["Pushdown a un braccio ai cavi","Tricipiti","c",1,0],["Estensioni sopra la testa ai cavi","Tricipiti","c",1,0],["Kickback con manubrio","Tricipiti","d",1,0],["Estensioni a un braccio con manubrio","Tricipiti","d",1,0],["Panca stretta con bilanciere","Tricipiti","b",2,1],
+  ["Pressa inclinata 45°","Quadricipiti","m",1,1],["Squat alla multipower","Quadricipiti","m",2,1],["Leg extension ai cavi","Quadricipiti","c",2,0],["Affondi camminati con manubri","Quadricipiti","d",2,1],["Front squat","Quadricipiti","b",3,1],
+  ["Leg curl ai cavi in piedi","Femorali","c",2,0],["Pull-through ai cavi","Femorali","c",2,1],["Stacco da terra","Femorali","b",3,1],["Good morning con bilanciere","Femorali","b",3,1],
+  ["Glute machine","Glutei","m",1,0],["Abduzioni ai cavi con cavigliera","Glutei","c",2,0],["Glute bridge con manubrio","Glutei","d",1,1],["Squat sumo con bilanciere","Glutei","b",3,1],
+  ["Calf in piedi con manubri","Polpacci","d",1,0],["Calf in piedi con bilanciere","Polpacci","b",2,0],
+  ["Leg raise alla macchina","Addome","m",1,0],["Woodchop ai cavi","Addome","c",2,0],["Pallof press","Addome","c",1,0],["Russian twist con manubrio","Addome","d",1,0],["Rollout con bilanciere","Addome","b",3,0],
+  ["Calf ai cavi","Polpacci","c",1,0],["Calf a un piede con manubrio","Polpacci","d",1,0],["Curl alla macchina a due braccia","Bicipiti","m",1,0],["Affondi ai cavi","Quadricipiti","c",2,1],["Squat ai cavi","Quadricipiti","c",1,1],["Leg curl alla macchina in piedi","Femorali","m",1,0],["Estensione lombare alla macchina","Schiena","m",1,0]
 ];
 var LIB=LIBRAW.map(function(r){return {n:r[0],mg:r[1],eq:r[2],lv:r[3],c:r[4]};});
 var LIBBY={};
@@ -834,6 +845,64 @@ var TIPS={
 "Rotazioni ai cavi":["Anche ferme, ruota il tronco con braccia quasi tese e controlla il ritorno.","Muovere le anche, slancio."],
 "Crunch con disco":["Piedi appoggiati, solleva spalle e petto espirando, disco sul petto.","Tirare il collo con le mani, sollevare tutta la schiena."]
 };
+Object.assign(TIPS,{
+"Chest press inclinata":["Regola il sedile: le maniglie all'altezza del petto alto. Spingi in avanti e in alto e torna lento.","Spalle alzate, schiena staccata, carico troppo alto."],
+"Chest press ai cavi":["Un passo avanti, busto stabile, spingi davanti al petto e torna controllato.","Busto che dondola, gomiti troppo alti."],
+"Croci ai cavi dal basso":["Gomiti leggermente flessi, porta le mani davanti al petto con un arco verso l'alto.","Trasformarle in una spinta, spalle in avanti."],
+"Croci inclinate con manubri":["Panca a circa 30°, gomiti leggermente flessi, apri e chiudi in arco con controllo.","Scendere troppo, carico troppo alto."],
+"Pullover con manubrio":["Sdraiato sulla panca, braccia quasi tese: porta il manubrio dietro la testa con controllo e risali.","Inarcare la schiena, scendere troppo."],
+"Panca inclinata con bilanciere":["Panca a circa 30°, scapole chiuse, bilanciere alla parte alta del petto e spinta verso l'alto.","Rimbalzo sul petto, glutei staccati, gomiti troppo larghi."],
+"Rematore alla macchina presa larga":["Petto contro il supporto, tira i gomiti larghi indietro e chiudi le scapole.","Staccare il petto, tirare con le spalle."],
+"Rematore ai cavi a un braccio":["Busto stabile, tira la maniglia verso l'anca con il gomito vicino al corpo.","Ruotare il busto, tirare solo con il braccio."],
+"Lat machine a un braccio ai cavi":["Tira la maniglia verso la spalla portando il gomito in basso e torna lento.","Inclinare il busto, usare lo slancio."],
+"Rematore su panca inclinata con manubri":["Petto sulla panca inclinata, tira i manubri verso i fianchi chiudendo le scapole.","Staccare il petto, scrollare le spalle."],
+"T-bar row":["Schiena neutra e anche indietro, tira verso il petto basso con i gomiti vicini.","Schiena arrotondata, slancio, carico troppo alto."],
+"Alzate laterali alla macchina":["Gomiti sul cuscino, solleva fino all'altezza delle spalle e torna lento.","Spalle alzate, slancio."],
+"Alzate frontali ai cavi":["Busto fermo, solleva fino all'altezza delle spalle con le braccia quasi tese e scendi lento.","Dondolare, salire sopra le spalle."],
+"Alzate posteriori ai cavi":["Incrocia i cavi, apri le braccia indietro con i gomiti leggermente flessi.","Tirare con i dorsali invece che con le spalle, slancio."],
+"Arnold press":["Parti con i palmi verso di te e ruota mentre spingi sopra la testa; torna controllato.","Inarcare la schiena, slancio, carico troppo alto."],
+"Alzate frontali con manubri":["Solleva davanti a te fino all'altezza delle spalle e scendi lento.","Slancio con il busto, salire troppo in alto."],
+"Scrollate con manubri":["Braccia lungo i fianchi, porta le spalle verso le orecchie in verticale e scendi lento.","Ruotare le spalle, piegare il collo, carico eccessivo."],
+"Panca Scott con bilanciere EZ":["Braccia appoggiate bene, scendi quasi fino a estendere e sali senza staccare i gomiti.","Staccare i gomiti, scendere di scatto, carico troppo alto."],
+"Curl con bilanciere":["Gomiti fermi ai fianchi, sali senza slancio e scendi lento.","Busto indietro, polsi piegati, dondolare."],
+"Curl ai cavi alti":["Braccia aperte ai lati, porta le mani verso le orecchie con i gomiti fermi.","Gomiti che salgono o scendono, slancio."],
+"Curl con corda ai cavi":["Gomiti fermi, sali con i palmi verso l'alto e controlla la discesa.","Spalle in avanti, busto che si inclina."],
+"Curl concentrato":["Gomito appoggiato alla coscia, sali lento e scendi controllato.","Slancio, spalla che si muove."],
+"Curl inclinato con manubri":["Seduto sulla panca inclinata con le braccia penzoloni, sali con i gomiti fermi.","Gomiti che vanno avanti, schiena staccata."],
+"Dip alla macchina":["Schiena aderente, spingi in basso fino a estendere i gomiti e risali controllato.","Spalle alzate, rimbalzare, escursione troppo ampia."],
+"Pushdown a un braccio ai cavi":["Gomito fermo al fianco, estendi completamente e risali lento.","Gomito che si allontana, busto che ruota."],
+"Estensioni sopra la testa ai cavi":["Gomiti vicini alla testa e fermi, estendi in avanti e torna controllato.","Gomiti larghi, schiena inarcata."],
+"Kickback con manubrio":["Busto inclinato, gomito fermo vicino al corpo, estendi il braccio indietro e torna lento.","Gomito che scende, slancio, carico alto."],
+"Estensioni a un braccio con manubrio":["Gomito vicino alla testa e fermo, scendi dietro la testa e estendi.","Gomito che si apre, schiena inarcata."],
+"Panca stretta con bilanciere":["Presa a larghezza spalle, gomiti vicini al busto, bilanciere al petto basso.","Presa troppo stretta (polsi), rimbalzo sul petto, glutei staccati."],
+"Pressa inclinata 45°":["Schiena appoggiata, piedi a larghezza spalle, scendi controllato e spingi con tutto il piede.","Bacino che si arrotola, ginocchia verso l'interno, bloccare le ginocchia in alto."],
+"Squat alla multipower":["Piedi leggermente avanti, schiena neutra, scendi controllato e spingi con tutto il piede.","Talloni che si staccano, ginocchia verso l'interno, carico troppo alto."],
+"Leg extension ai cavi":["Cavigliera al cavo basso, estendi il ginocchio e stringi in alto, ritorno lento.","Slancio, busto che si inclina."],
+"Affondi camminati con manubri":["Passo ampio, busto alto, scendi in verticale e spingi con il piede davanti.","Ginocchio che cede, passo troppo corto."],
+"Front squat":["Bilanciere sulle spalle in appoggio sul petto, gomiti alti, scendi con busto verticale.","Gomiti che cadono, schiena arrotondata, talloni che si staccano. Se sei alle prime volte fatti guardare da un trainer."],
+"Leg curl ai cavi in piedi":["Cavigliera al cavo basso, fletti il ginocchio portando il tallone verso il gluteo, busto fermo.","Slancio, bacino che si sposta."],
+"Pull-through ai cavi":["Di spalle al cavo, spingi i fianchi indietro con schiena neutra e risali stringendo i glutei.","Schiena arrotondata, piegare troppo le ginocchia."],
+"Stacco da terra":["Bilanciere vicino alle gambe, schiena neutra, spingi i piedi a terra e sali con spalle e fianchi insieme.","Schiena arrotondata, bilanciere lontano dal corpo, strappare. Se sei alle prime volte fatti guardare da un trainer."],
+"Good morning con bilanciere":["Ginocchia leggermente flesse, porta i fianchi indietro con schiena neutra e risali.","Schiena arrotondata, carico troppo alto. Se sei alle prime volte fatti guardare da un trainer."],
+"Glute machine":["Appoggio stabile, spingi indietro con il tallone stringendo il gluteo e torna lento.","Inarcare la schiena, slancio."],
+"Abduzioni ai cavi con cavigliera":["Busto stabile, porta la gamba di lato senza ruotare il bacino e torna controllato.","Inclinare il busto, slancio."],
+"Glute bridge con manubrio":["Schiena a terra, manubrio sul bacino, spingi con i talloni e stringi i glutei in alto.","Inarcare i lombi, spingere con la schiena."],
+"Squat sumo con bilanciere":["Piedi larghi con punte in fuori, schiena neutra, scendi con ginocchia in linea con i piedi.","Ginocchia verso l'interno, schiena arrotondata. Se sei alle prime volte fatti guardare da un trainer."],
+"Calf in piedi con manubri":["Manubri ai fianchi, sali sulla punta il più possibile e scendi con controllo.","Mezze escursioni, rimbalzi."],
+"Calf in piedi con bilanciere":["Bilanciere sui trapezi, sali sulla punta il più possibile e scendi sotto il livello del gradino.","Mezze escursioni, rimbalzi, carico troppo alto."],
+"Calf ai cavi":["Cavigliera o barra ai cavi bassi, sali sulla punta e scendi con controllo.","Mezze escursioni, rimbalzi."],
+"Calf a un piede con manubrio":["Un piede sul gradino, manubrio nella mano dello stesso lato, sali sulla punta e scendi lento.","Rimbalzi, escursione ridotta."],
+"Curl alla macchina a due braccia":["Regola il sedile, gomiti sul cuscino, sali senza slancio e scendi controllato.","Staccare i gomiti, dondolare."],
+"Affondi ai cavi":["Passo ampio, busto alto, scendi in verticale e spingi con il piede davanti.","Ginocchio che cede, passo troppo corto."],
+"Squat ai cavi":["Cavo basso con la barra davanti al petto, schiena neutra, scendi controllato e spingi con tutto il piede.","Talloni che si staccano, schiena arrotondata."],
+"Leg curl alla macchina in piedi":["Una gamba alla volta, porta il tallone al gluteo e scendi lento, busto fermo.","Slancio, bacino che si sposta."],
+"Estensione lombare alla macchina":["Schiena contro il supporto, estendi fino alla linea neutra e torna lento, senza iperestendere.","Iperestendere, carico troppo alto."],
+"Leg raise alla macchina":["Schiena appoggiata, solleva le ginocchia verso il petto arrotondando il bacino e scendi lento.","Slancio, usare solo i flessori delle anche."],
+"Woodchop ai cavi":["Dal cavo alto al basso con una rotazione del tronco e braccia quasi tese; anche stabili.","Muovere solo le braccia, slancio."],
+"Pallof press":["Cavo all'altezza del petto, spingi le mani avanti senza ruotare il busto e torna.","Lasciarsi ruotare dal cavo, inarcare la schiena."],
+"Russian twist con manubrio":["Busto inclinato indietro con schiena neutra, ruota il tronco da un lato all'altro in modo controllato.","Muovere solo le braccia, schiena arrotondata."],
+"Rollout con bilanciere":["Ginocchia a terra, addome contratto, scendi finché mantieni la schiena neutra e torna.","Inarcare i lombi, scendere troppo. È un esercizio impegnativo."]
+});
 var TIPS_MG={
  Petto:["Scapole chiuse, spalle basse, movimento lento e controllato.","Spalle verso le orecchie, rimbalzi, carico troppo alto."],
  Schiena:["Petto alto, tira con i gomiti e chiudi le scapole, ritorno lento.","Slancio con il busto, schiena arrotondata."],
@@ -1359,7 +1428,7 @@ function renderWizard(){
   }else{
     var st=schedaStats(wzOut);
     var sw=styleWarn(wz.stile,wz.giorni),hitNew=(wz.stile==="hit"&&wz.liv==="principiante");
-    html+='<div class="sub" style="margin-top:12px;color:var(--ink)"><b>Stile:</b> '+esc((STILI.filter(function(x){return x[0]===wz.stile;})[0]||["",""])[1])+'</div>'+(sw?'<div class="sub" style="color:var(--accent)">⚠️ '+esc(sw)+'</div>':'')+(hitNew?'<div class="sub" style="color:var(--accent)">⚠️ Hai indicato di essere principiante: l\'alta intensità è più adatta a chi ha già esperienza e buona tecnica.</div>':'')+'<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div><div class="sub">🔄 cambia l\'esercizio · 🔒 lo tiene quando premi Rigenera</div>'+(wzRelaxed?'<div class="sub" style="color:var(--ink)">Per qualche gruppo muscolare non c\'erano esercizi con gli attrezzi scelti: ho usato l\'attrezzo più vicino.</div>':'');
+    html+='<div class="sub" style="margin-top:12px;color:var(--ink)"><b>Stile:</b> '+esc((STILI.filter(function(x){return x[0]===wz.stile;})[0]||["",""])[1])+'</div>'+(sw?'<div class="sub" style="color:var(--accent)">⚠️ '+esc(sw)+'</div>':'')+(hitNew?'<div class="sub" style="color:var(--accent)">⚠️ Hai indicato di essere principiante: l\'alta intensità è più adatta a chi ha già esperienza e buona tecnica.</div>':'')+'<div style="margin:12px 0 4px">'+scoreHTML(st)+'</div><div class="sub" style="margin-top:0">'+esc(statsLine(st))+'</div><div class="sub">🔄 cambia l\'esercizio · 🔒 lo tiene quando premi Rigenera</div>';
     wzOut.forEach(function(g,gi){
       html+='<div class="group-t"><b>'+esc(gBadge(g.t))+'</b> <span>'+esc(g.t)+(mgLine(g)?' <span class="gs">· '+esc(mgLine(g))+'</span>':'')+'</span></div><div class="card plist" style="padding:6px 14px">'+
         g.ex.map(function(e,ei){var k=gi+"."+ei;return '<div class="pe"><div class="pt"><span>'+esc(e.n)+'</span><span>'+esc(rx(e))+'</span></div><div class="pb"><button class="ic" type="button" data-act="wzsw" data-k="'+k+'" aria-label="Sostituisci '+esc(e.n)+'">🔄</button><button class="ic'+(e.lk?" on":"")+'" type="button" data-act="wzlk" data-k="'+k+'" aria-label="'+(e.lk?"Sblocca ":"Blocca ")+esc(e.n)+'">'+(e.lk?"🔒":"🔓")+'</button></div></div>';}).join("")+'</div>';
