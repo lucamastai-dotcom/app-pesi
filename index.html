@@ -231,6 +231,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     <div class="quote" style="margin:4px 2px 0;text-align:center;text-wrap:balance;font:italic 600 15px/1.35 var(--font-display);color:var(--accent)">«Il tuo fisico non riflette le tue intenzioni, racconta le tue abitudini.»</div>
     <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
     <div id="trend"></div>
+    <div id="goals"></div>
     <div class="exa"><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button><button class="btn small" type="button" data-exa="wizard">Genera scheda</button></div>
     <div id="ex-list"></div>
   </section>
@@ -285,9 +286,19 @@ var LIBRAW=[
   ["Calf ai cavi","Polpacci","c",1,0],["Calf a un piede con manubrio","Polpacci","d",1,0],["Curl alla macchina a due braccia","Bicipiti","m",1,0],["Affondi ai cavi","Quadricipiti","c",2,1],["Squat ai cavi","Quadricipiti","c",1,1],["Leg curl alla macchina in piedi","Femorali","m",1,0],["Estensione lombare alla macchina","Schiena","m",1,0]
 ];
 var LIB=LIBRAW.map(function(r){return {n:r[0],mg:r[1],eq:r[2],lv:r[3],c:r[4]};});
+/* Esercizi a corpo libero: usati solo dagli obiettivi (eq "x"), mai dal generatore */
+var BWRAW=[
+  ["Piegamenti al muro","Petto","x",1,1],["Piegamenti inclinati (mani su una panca)","Petto","x",1,1],["Piegamenti con le ginocchia a terra","Petto","x",1,1],["Piegamenti negativi","Petto","x",2,1],["Piegamenti completi","Petto","x",2,1],
+  ["Sospensione alla sbarra (secondi)","Schiena","x",1,0],["Rematore inverso alla sbarra bassa","Schiena","x",1,1],["Trazioni negative","Schiena","x",2,1],["Trazioni con elastico","Schiena","x",2,1],["Trazioni complete","Schiena","x",3,1],
+  ["Squat assistito (con appoggio)","Quadricipiti","x",1,1],["Squat alla panca (siediti e rialzati)","Quadricipiti","x",1,1],["Squat a corpo libero","Quadricipiti","x",1,1],
+  ["Plank sulle ginocchia (secondi)","Addome","x",1,0],["Plank sugli avambracci (secondi)","Addome","x",1,0],
+  ["Allungamento femorali sdraiato con asciugamano (secondi)","Femorali","x",1,0],["Flessione in avanti con ginocchia piegate (secondi)","Femorali","x",1,0],["Allungamento femorali da seduto (secondi)","Femorali","x",1,0],["Flessione in avanti a gambe tese (secondi)","Femorali","x",1,0]
+];
+var BWLIB=BWRAW.map(function(r){return {n:r[0],mg:r[1],eq:r[2],lv:r[3],c:r[4]};});
 var LIBBY={};
 function norm(s){return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();}
 LIB.forEach(function(e){LIBBY[norm(e.n)]=e;});
+BWLIB.forEach(function(e){LIBBY[norm(e.n)]=e;});
 function libOf(name){return LIBBY[norm(name)]||null;}
 
 /* ====== Utilità ====== */
@@ -825,7 +836,7 @@ function progHint(name,h){
 }
 function exRow(e){
   var name=e.n,h=history(S.me,name),pr=rx(e);
-  if(!h.length) return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+'nessun dato, tocca per aggiungere</div></div><div class="kg">—</div></button></div>';
+  if(!h.length) return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+(libOf(name)&&libOf(name).eq==="x"?"a corpo libero":"nessun dato, tocca per aggiungere")+'</div></div><div class="kg">—</div></button></div>';
   var l=h[h.length-1];
   var d=h.length>1?deltaHTML(l.kg-h[h.length-2].kg):'<span class="d eq">primo dato</span>';
   var done=(l.d===iso(new Date()));
@@ -840,7 +851,7 @@ function trendInfo(){
   var all=Object.keys(dates).sort();
   if(all.length<2) return null;
   var win=all.filter(function(d){var n=dayDiff(d,today);return n>=0&&n<28;});
-  var days=mySchedaObj().filter(function(g){return g.ex&&g.ex.length;}).length||3;
+  var days=mySchedaObj().filter(function(g){return g.ex&&g.ex.length&&!/^Obiettivo/.test(g.t||"");}).length||3;
   var weeks=Math.min(4,Math.max(1,Math.ceil((dayDiff(all[0],today)+1)/7)));
   var r=(win.length/weeks)/days;
   var up=0,same=0,down=0;
@@ -873,6 +884,7 @@ function trendHTML(){
 }
 function renderEx(){
   $("trend").innerHTML=trendHTML();
+  $("goals").innerHTML=goalsHTML();
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
   var html="";
@@ -1009,6 +1021,27 @@ Object.assign(TIPS,{
 "Russian twist con manubrio":["Busto inclinato indietro con schiena neutra, ruota il tronco da un lato all'altro in modo controllato.","Muovere solo le braccia, schiena arrotondata."],
 "Rollout con bilanciere":["Ginocchia a terra, addome contratto, scendi finché mantieni la schiena neutra e torna.","Inarcare i lombi, scendere troppo. È un esercizio impegnativo."]
 });
+Object.assign(TIPS,{
+"Piegamenti al muro":["Mani sul muro all'altezza delle spalle, corpo in linea. Avvicina il petto al muro piegando i gomiti e spingi indietro.","Bacino che cede, gomiti larghissimi, testa in avanti."],
+"Piegamenti inclinati (mani su una panca)":["Mani su una panca stabile, corpo in linea dalla testa ai talloni. Scendi fino a sfiorare la panca e risali.","Bacino che cala, gomiti larghi, escursione ridotta. Più è bassa la panca, più è difficile."],
+"Piegamenti con le ginocchia a terra":["Appoggio sulle ginocchia con busto in linea con le cosce. Scendi con il petto fino a un pugno dal pavimento e spingi.","Sedere indietro, gomiti larghi, scendere solo con la testa."],
+"Piegamenti negativi":["Parti in alto in posizione di piegamento completo e scendi lento in 3-4 secondi. Poi ginocchia a terra per risalire.","Scendere di colpo, bacino che cede."],
+"Piegamenti completi":["Mani poco più larghe delle spalle, corpo rigido in linea, gomiti a circa 45°. Scendi fino a sfiorare il pavimento e risali.","Bacino che cala o sale, gomiti larghi, mezze ripetizioni."],
+"Sospensione alla sbarra (secondi)":["Appeso alla sbarra con presa poco più larga delle spalle, spalle attive (non scrollate verso le orecchie) e addome contratto. Tieni il tempo indicato.","Mollare le spalle, dondolare. Se serve, tieni i piedi su uno sgabello."],
+"Rematore inverso alla sbarra bassa":["Sotto una sbarra bassa, corpo in linea. Tira il petto verso la sbarra chiudendo le scapole e scendi controllato.","Bacino che cala, tirare solo con le braccia. Più i piedi sono avanti, più è difficile."],
+"Trazioni negative":["Parti con il mento sopra la sbarra (salta o usa uno sgabello) e scendi lento in 3-5 secondi fino alle braccia tese.","Scendere di colpo, spalle scrollate."],
+"Trazioni con elastico":["Elastico sulla sbarra con il piede o il ginocchio dentro. Tira finché il mento supera la sbarra e scendi controllato.","Dondolare, usare lo slancio dell'elastico, mezze ripetizioni."],
+"Trazioni complete":["Presa poco più larga delle spalle, scapole giù e indietro. Tira finché il mento supera la sbarra e scendi fino a braccia tese.","Dondolare, mezze ripetizioni, mento che si allunga senza salire con il busto."],
+"Squat assistito (con appoggio)":["Tieniti a un appoggio stabile con le mani. Scendi con il bacino indietro e le ginocchia in linea con i piedi, poi risali spingendo con i talloni.","Ginocchia verso l'interno, talloni che si staccano."],
+"Squat alla panca (siediti e rialzati)":["Siediti sulla panca con controllo, senza lasciarti cadere, e rialzati spingendo con i talloni.","Cadere sulla panca, ginocchia verso l'interno, schiena arrotondata."],
+"Squat a corpo libero":["Piedi a larghezza spalle, scendi con il bacino indietro e la schiena neutra, ginocchia in linea con i piedi, poi risali.","Ginocchia verso l'interno, talloni che si staccano, schiena arrotondata."],
+"Plank sulle ginocchia (secondi)":["Avambracci a terra sotto le spalle, ginocchia appoggiate, corpo in linea dal bacino alla testa. Addome e glutei contratti.","Bacino che cala o sale, trattenere il respiro."],
+"Plank sugli avambracci (secondi)":["Avambracci a terra, corpo rigido dai talloni alla testa, addome e glutei contratti. Respira con calma.","Bacino che cala (lombari) o sale, testa che cade."],
+"Allungamento femorali sdraiato con asciugamano (secondi)":["Sdraiato, asciugamano attorno al piede, gamba tesa verso l'alto. Tira piano fino a sentire un allungamento, senza dolore.","Forzare o rimbalzare, piegare il ginocchio della gamba a terra."],
+"Flessione in avanti con ginocchia piegate (secondi)":["In piedi, ginocchia piegate, scendi in avanti con la schiena lunga e lascia pesare braccia e testa.","Rimbalzare, spingere oltre il dolore."],
+"Allungamento femorali da seduto (secondi)":["Seduto con le gambe tese, porta il busto in avanti con la schiena lunga, mani verso i piedi senza forzare.","Schiena molto arrotondata, rimbalzare."],
+"Flessione in avanti a gambe tese (secondi)":["In piedi con le gambe tese, scendi lentamente in avanti portando le mani verso i piedi, respirando; tieni la posizione.","Rimbalzare, forzare oltre il dolore, bloccare le ginocchia in iperestensione."]
+});
 var TIPS_MG={
  Petto:["Scapole chiuse, spalle basse, movimento lento e controllato.","Spalle verso le orecchie, rimbalzi, carico troppo alto."],
  Schiena:["Petto alto, tira con i gomiti e chiudi le scapole, ritorno lento.","Slancio con il busto, schiena arrotondata."],
@@ -1122,6 +1155,124 @@ function gymAct(a){
   if(a==="save"){lsSet("dpc-gym",JSON.stringify(gymDraft));closeSheet();setStatus("Palestra salvata.");return;}
   if(a==="clear"){try{localStorage.removeItem("dpc-gym");}catch(x){}closeSheet();setStatus("Lista rimossa: il generatore usa di nuovo tutti gli attrezzi.");}
 }
+/* ====== Obiettivi: percorsi guidati verso un movimento ====== */
+var GOALS={
+  push:{n:"Piegamenti",ic:"💪",type:"reps",unit:"piegamenti",tdef:20,
+    q:"Quanti piegamenti completi riesci a fare adesso? (anche 0)",place:[0,1,3,5,8],fin:5,
+    lv:[{n:"Piegamenti al muro",st:10,up:15},{n:"Piegamenti inclinati (mani su una panca)",st:8,up:12},{n:"Piegamenti con le ginocchia a terra",st:8,up:12},{n:"Piegamenti negativi",st:5,up:8},{n:"Piegamenti completi",st:5,fin:1}]},
+  pull:{n:"Trazioni",ic:"🧗",type:"reps",unit:"trazioni",tdef:5,
+    q:"Quante trazioni complete riesci a fare adesso? (anche 0)",place:[0,null,1,2,4],fin:2,
+    lv:[{n:"Sospensione alla sbarra (secondi)",st:20,up:30},{n:"Rematore inverso alla sbarra bassa",st:8,up:12},{n:"Trazioni negative",st:3,up:5},{n:"Trazioni con elastico",st:5,up:8},{n:"Trazioni complete",st:2,fin:1}]},
+  squat:{n:"Squat a corpo libero",ic:"🦵",type:"reps",unit:"squat",tdef:30,
+    q:"Quanti squat a corpo libero riesci a fare di fila adesso? (anche 0)",place:[0,5,12],fin:12,
+    lv:[{n:"Squat assistito (con appoggio)",st:10,up:15},{n:"Squat alla panca (siediti e rialzati)",st:10,up:15},{n:"Squat a corpo libero",st:12,fin:1}]},
+  plank:{n:"Plank",ic:"🧱",type:"reps",unit:"secondi",tdef:60,
+    q:"Per quanti secondi tieni il plank sugli avambracci adesso? (anche 0)",place:[0,20],fin:20,
+    lv:[{n:"Plank sulle ginocchia (secondi)",st:20,up:30},{n:"Plank sugli avambracci (secondi)",st:20,fin:1}]},
+  flex:{n:"Toccarsi i piedi",ic:"🤸",type:"reach",unit:"",tdef:4,
+    q:"Dove arrivi con le mani a gambe tese?",place:[1,2,3,4],fin:30,
+    lv:[{n:"Allungamento femorali sdraiato con asciugamano (secondi)",st:30},{n:"Flessione in avanti con ginocchia piegate (secondi)",st:30},{n:"Allungamento femorali da seduto (secondi)",st:30},{n:"Flessione in avanti a gambe tese (secondi)",st:30,fin:1}]}
+};
+var REACH=[[1,"Ginocchia"],[2,"Metà stinchi"],[3,"Caviglie"],[4,"Punta dei piedi"]];
+var gSel="push",gReach=1;
+function goalsAll(){try{return JSON.parse(lsGet("dpc-goals")||"{}")||{};}catch(e){return {};}}
+function goalsMine(){var o=goalsAll();return o[S.me]||{};}
+function goalsPut(key,st){var o=goalsAll();o[S.me]=o[S.me]||{};if(st) o[S.me][key]=st;else delete o[S.me][key];lsSet("dpc-goals",JSON.stringify(o));}
+function goalFinalIdx(g){return g.lv.length-1;}
+function goalPlace(g,v){var lvl=0;g.place.forEach(function(m,i){if(m!==null&&v>=m) lvl=i;});return lvl;}
+function goalR(g,lvl,v){ // ripetizioni (o secondi) per serie
+  var L=g.lv[lvl];
+  if(g.type==="reach") return L.st;
+  if(L.fin) return Math.max(g.fin,Math.round((v||0)*0.7));
+  if(v===null||v===undefined||!(v>0)) return L.st;
+  return Math.min(L.up,Math.max(L.st,Math.round(v*0.8)));
+}
+function goalExercises(g,st){
+  var L=g.lv[st.lvl],ex=[{id:uid(),n:L.n,s:3,r:String(st.r),rec:90}];
+  if(st.lvl>0){var P=g.lv[st.lvl-1];ex.push({id:uid(),n:P.n,s:2,r:String(g.type==="reach"?P.st:(P.up||P.st)),rec:60});}
+  return ex;
+}
+function goalApply(key,st){ // aggiorna (o crea) la giornata dell'obiettivo nella scheda
+  var g=GOALS[key],sch=cloneScheda(mySchedaObj()),day=null;
+  sch.forEach(function(d){if(d.id===st.dayId) day=d;});
+  var exs=goalExercises(g,st);
+  if(day) day.ex=exs;
+  else{day={id:uid(),t:"Obiettivo "+g.n.toLowerCase(),ex:exs};sch.push(day);st.dayId=day.id;}
+  return saveMyScheda(sch,[]);
+}
+function goalStart(key,v,target){
+  var g=GOALS[key],lvl=goalPlace(g,v);
+  var st={lvl:lvl,target:target,tests:[{d:iso(new Date()),v:v,l:lvl}],dayId:(goalsMine()[key]||{}).dayId||""};
+  st.r=g.type==="reach"?g.lv[lvl].st:(g.lv[lvl].fin?Math.max(g.fin,Math.round(v*0.6)):g.lv[lvl].st);
+  return st;
+}
+function goalRetest(key,v){
+  var g=GOALS[key],st=goalsMine()[key],L=g.lv[st.lvl],msg="";
+  if(g.type==="reach"){
+    var nl=goalPlace(g,v);
+    msg=nl>st.lvl?"Livello superato! 🎉":(v>=4?"Obiettivo raggiunto! 🎉":"Test registrato.");
+    st.lvl=nl;st.r=L.st&&g.lv[nl].st;
+  }else if(L.fin){
+    st.r=goalR(g,st.lvl,v);
+    msg=v>=st.target?"Obiettivo raggiunto! 🎉":"Test registrato: sei a "+v+" su "+st.target+".";
+  }else if(v>=L.up){
+    st.lvl++;st.r=g.lv[st.lvl].st;
+    msg="Livello superato! 🎉 Passi a: "+g.lv[st.lvl].n+".";
+  }else{
+    st.r=goalR(g,st.lvl,v);
+    msg="Test registrato: ti mancano "+(L.up-v)+" per passare al livello successivo.";
+  }
+  st.tests.push({d:iso(new Date()),v:v,l:st.lvl});
+  goalsPut(key,st);
+  return goalApply(key,st).then(function(){goalsPut(key,st);return msg;});
+}
+function goalPct(g,st){
+  var last=st.tests[st.tests.length-1].v,n=g.lv.length;
+  if(g.type==="reach") return Math.min(1,(Math.max(1,last)-1)/3);
+  var L=g.lv[st.lvl],inLv=L.fin?Math.min(1,last/st.target):Math.min(1,(last||0)/L.up);
+  return Math.min(1,(st.lvl+inLv)/n);
+}
+function goalsHTML(){
+  var m=goalsMine(),keys=Object.keys(m).filter(function(k){return GOALS[k];});
+  if(!keys.length) return "";
+  return keys.map(function(k){
+    var g=GOALS[k],st=m[k],L=g.lv[st.lvl],last=st.tests[st.tests.length-1];
+    var done=(g.type==="reach"?last.v>=4:(L.fin&&last.v>=st.target));
+    var ago=dayDiff(last.d,iso(new Date()));
+    var pct=Math.round(goalPct(g,st)*100);
+    return '<div class="card" style="margin:8px 0 0;padding:10px 14px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><b>'+g.ic+' '+esc(g.n)+(g.type==="reps"?' · obiettivo '+st.target+(g.unit==="secondi"?" s":""):'')+'</b><div class="sub" style="margin:2px 0 0">'+(done?"Obiettivo raggiunto! 🎉 Continua per mantenerlo.":"Livello "+(st.lvl+1)+" di "+g.lv.length+": "+esc(L.n))+'</div></div>'+
+      '<button class="btn small" type="button" data-gt="'+k+'">Test</button></div>'+
+      '<div style="height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:var(--accent)"></i></div>'+
+      '<div class="sub" style="margin:6px 0 0">'+(g.type==="reach"?"Ultimo test: "+esc(REACH[Math.max(1,last.v)-1][1]):"Ultimo test: "+last.v+(g.unit==="secondi"?" s":""))+' · '+(ago<=0?"oggi":ago+" giorni fa")+(ago<14?" · rifallo dopo 2-3 settimane":" · è ora di rifare il test")+'</div></div>';
+  }).join("");
+}
+function openGoal(){
+  var g=GOALS[gSel],ex=!!goalsMine()[gSel];
+  var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda per un obiettivo</h2><div class="sub">Scegli un movimento: ti guido dal livello più facile fino al traguardo.</div></div>'+closeBtn()+'</div>';
+  h+='<div class="chips" style="margin-top:12px">'+Object.keys(GOALS).map(function(k){return '<button type="button" class="chip'+(gSel===k?" on":"")+'" data-gs="'+k+'">'+GOALS[k].ic+' '+esc(GOALS[k].n)+'</button>';}).join("")+'</div>';
+  h+='<div class="sub" style="margin-top:10px;color:var(--ink)">Percorso: '+g.lv.map(function(l){return esc(l.n.replace(" (secondi)",""));}).join(" → ")+'</div>';
+  h+='<label class="l" style="margin-top:14px">'+esc(g.q)+'</label>';
+  if(g.type==="reach") h+='<div class="chips">'+REACH.map(function(r){return '<button type="button" class="chip'+(gReach===r[0]?" on":"")+'" data-gr="'+r[0]+'">'+r[1]+'</button>';}).join("")+'</div>';
+  else{
+    h+='<input id="g-test" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="0" aria-label="Test iniziale">';
+    h+='<label class="l" for="g-target" style="margin-top:14px">Il tuo obiettivo ('+esc(g.unit)+')</label><input id="g-target" type="text" inputmode="numeric" autocomplete="off" maxlength="3" value="'+g.tdef+'">';
+  }
+  h+='<div class="sub" style="margin-top:10px">Aggiungo alla tua scheda una giornata "Obiettivo '+esc(g.n.toLowerCase())+'": falla 2-3 volte a settimana, con un giorno di pausa in mezzo. Ogni 2-3 settimane rifai il test dalla card in cima alla Scheda.</div>';
+  if(ex) h+='<div class="sub" style="margin-top:8px;color:var(--accent)">Hai già questo obiettivo: se continui riparti da capo con un nuovo test.</div>';
+  h+='<div class="err" id="g-note"></div><button class="btn full" type="button" data-act="goalmake" style="margin-top:10px">'+(ex?"Ricomincia":"Crea il percorso")+'</button>';
+  h+='<div class="sub" style="margin-top:10px">'+DISCL+'</div>';
+  openSheet(h);
+}
+function openGoalTest(key){
+  var g=GOALS[key],st=goalsMine()[key],L=g.lv[st.lvl];
+  var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Test: '+esc(g.n)+'</h2><div class="sub">'+(g.type==="reach"?"Dove arrivi con le mani a gambe tese?":"Quante ripetizioni fai ora di «"+esc(L.n.replace(" (secondi)",""))+"»? "+(L.fin?"Il tuo obiettivo è "+st.target+".":"Per passare al livello dopo servono "+L.up+"."))+'</div></div>'+closeBtn()+'</div>';
+  if(g.type==="reach") h+='<div class="chips" style="margin-top:12px">'+REACH.map(function(r){return '<button type="button" class="chip'+(gReach===r[0]?" on":"")+'" data-gr="'+r[0]+'" data-gtest="'+key+'">'+r[1]+'</button>';}).join("")+'</div>';
+  else h+='<input id="g-test" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="0" style="margin-top:12px" aria-label="Risultato del test">';
+  h+='<div class="err" id="g-note"></div><button class="btn full" type="button" data-act="goalsave" data-key="'+key+'" style="margin-top:10px">Salva il test</button>';
+  h+='<button class="btn ghost full" type="button" data-act="goalrm" data-key="'+key+'" style="margin-top:8px">Rimuovi questo obiettivo</button>';
+  h+='<div class="sub" style="margin-top:10px">I test sono salvati su questo telefono.</div>';
+  openSheet(h);
+}
 function timerHTML(){
   return '<div class="tbar" id="tbar" data-state="idle"><div class="tprog"><i id="tprog"></i></div><div class="tlabel" id="tlabel">Pausa</div><div class="tin">'+
     '<button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button><button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button><button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button><button type="button" id="t-stop" hidden>Stop</button></div></div>';
@@ -1135,6 +1286,7 @@ function openDetail(name){
   if(pr) html+='<div class="sub" style="margin-top:0">Da fare: '+esc(pr)+'</div>';
   if(h.length>1) html+='<div class="sub">Da '+fmt(first.kg)+' a '+fmt(last.kg)+' kg · '+deltaHTML(last.kg-first.kg)+' dal '+dshort(first.d)+'</div>';
   else if(h.length===1) html+='<div class="sub">Un solo dato per ora.</div>';
+  else if(libOf(name)&&libOf(name).eq==="x") html+='<div class="sub">A corpo libero: non serve il peso.</div>';
   else html+='<div class="sub">Ancora nessun dato.</div>';
   html+='</div>'+closeBtn()+'</div>';
   var tp=tipsFor(name),qn=encodeURIComponent(name);
@@ -1143,12 +1295,14 @@ function openDetail(name){
     '<div class="sub" style="margin-top:12px">Sintesi generale scritta per l\'app. Per le guide complete di Project inVictus: <a href="https://www.google.com/search?q='+encodeURIComponent("site:projectinvictus.it "+name+" esecuzione errori comuni")+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">guide</a> · <a href="https://www.youtube.com/results?search_query='+encodeURIComponent("Project inVictus "+name)+'" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">video</a></div></div>';
   html+='<div class="card" style="margin-top:12px"><label class="l">Serie di oggi</label><div id="srow">'+serieHTML(name)+'</div></div>';
   html+=timerHTML();
-  html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
+  var bw=libOf(name)&&libOf(name).eq==="x";
+  if(bw) html+='<div class="card sub" style="margin-top:12px">Per l\'obiettivo non serve registrare il peso: ogni 2-3 settimane fai il test dalla card 🎯 in cima alla Scheda.</div>';
+  else html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
     '<button class="btn" type="button" data-act="addw" style="flex:1 1 100%">Salva peso</button></div>'+
     '<div class="err" id="a-note"></div></div>';
-  html+=chartSVG(h);
+  if(!bw) html+=chartSVG(h);
   h.slice().reverse().forEach(function(x,i,arr){
     var prev=arr[i+1];
     html+='<div class="hist"><div>'+esc(dlabel(x.d))+'</div><div class="row" style="gap:10px"><b>'+fmt(x.kg)+' kg</b>'+(prev?deltaHTML(x.kg-prev.kg):'')+'<button class="x" type="button" data-del="'+esc(x.d)+'" aria-label="Elimina">×</button></div></div>';
@@ -1596,6 +1750,7 @@ function applyIB(){
 function renderWizard(){
   var html='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda su misura</h2><div class="sub">Rispondi alle domande e ti propongo una scheda.</div></div>'+closeBtn()+'</div>';
   if(!wzOut){
+    html+='<button class="btn ghost full" type="button" data-act="goalopen" style="margin-top:12px">🎯 Scheda per un obiettivo (piegamenti, trazioni…)</button>';
     html+=ibHTML();
     WZOPT.forEach(function(o){
       if(o[0]==="att"&&loadGym()){
@@ -1767,6 +1922,7 @@ $("v-ex").addEventListener("click",function(e){
   }
   if((b=e.target.closest("[data-ex]")))openDetail(b.dataset.ex);
 });
+$("goals").addEventListener("click",function(e){var b=e.target.closest("[data-gt]");if(b)openGoalTest(b.dataset.gt);});
 $("ex-list").addEventListener("click",function(e){
   var b=e.target.closest("[data-stall]");if(!b) return;
   e.stopPropagation();
@@ -1829,6 +1985,26 @@ $("ov").addEventListener("click",function(e){
     if(a==="pkcustom") return addCustom();
     if(a==="ibtoggle"){wzIB.open=!wzIB.open;return renderWizard();}
     if(a==="ibapply") return applyIB();
+    if(a==="goalopen"){gSel=gSel||"push";return openGoal();}
+    if(a==="goalmake"){
+      var gk=gSel,gg=GOALS[gk],v,tg=gg.tdef;
+      if(gg.type==="reach") v=gReach;
+      else{
+        v=parseInt(String($("g-test").value).trim()||"",10);tg=parseInt(String($("g-target").value).trim()||"",10);
+        if(!isFinite(v)||v<0){$("g-note").textContent="Scrivi il risultato del test (anche 0).";return;}
+        if(!isFinite(tg)||tg<=0||tg<=v){$("g-note").textContent="L'obiettivo deve essere più alto del tuo risultato di oggi.";return;}
+      }
+      var gst=goalStart(gk,v,tg);
+      setStatus("Creo il percorso…");
+      return goalApply(gk,gst).then(function(){goalsPut(gk,gst);var sc=mySchedaObj();closeSheet();setTab("ex");openG[gst.dayId]=true;renderAll();setStatus("Percorso creato: "+gg.lv[gst.lvl].n+".");}).catch(function(err){setStatus("Non salvato: "+err.message);});
+    }
+    if(a==="goalsave"){
+      var k2=b.dataset.key,g2=GOALS[k2],v2;
+      if(g2.type==="reach") v2=gReach;
+      else{v2=parseInt(String($("g-test").value).trim()||"",10);if(!isFinite(v2)||v2<0){$("g-note").textContent="Scrivi il risultato del test.";return;}}
+      return goalRetest(k2,v2).then(function(msg){closeSheet();renderAll();setStatus(msg);}).catch(function(err){$("g-note").textContent="Non salvato: "+err.message;});
+    }
+    if(a==="goalrm"){var k3=b.dataset.key;goalsPut(k3,null);closeSheet();renderAll();setStatus("Obiettivo rimosso (la giornata resta nella scheda).");return;}
     if(a==="gymoff"){wz.gymOn=false;return renderWizard();}
     if(a==="gymon"){wz.gymOn=true;return renderWizard();}
     if(a==="wzgo"){wzOut=genScheda(wz);useConfirm=false;return renderWizard();}
@@ -1845,6 +2021,8 @@ $("ov").addEventListener("click",function(e){
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
+  if((b=t.closest("[data-gs]"))){gSel=b.dataset.gs;openGoal();return;}
+  if((b=t.closest("[data-gr]"))){gReach=+b.dataset.gr;if(b.dataset.gtest)openGoalTest(b.dataset.gtest);else openGoal();return;}
   if((b=t.closest("[data-set]"))){if(b.dataset.set==="gym")openGym();return;}
   if((b=t.closest("[data-gk]"))&&gymDraft){var gi2=gymDraft.indexOf(b.dataset.gk);if(gi2>-1)gymDraft.splice(gi2,1);else gymDraft.push(b.dataset.gk);return renderGym();}
   if((b=t.closest("[data-gact]"))&&gymDraft){return gymAct(b.dataset.gact);}
