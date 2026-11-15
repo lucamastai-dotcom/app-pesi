@@ -680,6 +680,7 @@ function applyState(j){
   }else if(!renamedMine&&repsMig&&S.me&&userObj(S.me)) lsSet("dpc-reps1","1");
   S.log=(j.log||[]).map(function(r){return {u:r[0],d:r[1],e:r[2],kg:r[3]};});
   lastSync=Date.now();
+  curSeed();
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:j.log}));}catch(e){}
 }
 var saveAt=0,saving=0;
@@ -762,6 +763,17 @@ function myExObj(name){
   mySchedaObj().forEach(function(g){g.ex.forEach(function(e){if(e.n===name) r=e;});});
   return r;
 }
+/* Peso attuale per esercizio: separato dallo storico, resta anche se cancelli le sessioni */
+function curAll(){try{return JSON.parse(localStorage.getItem("dpc-cur")||"{}")||{};}catch(e){return {};}}
+function curGet(name){var m=curAll()[S.me];var v=m&&m[name];return (typeof v==="number"&&v>0)?v:null;}
+function curSet(name,kg){var a=curAll();a[S.me]=a[S.me]||{};if(kg>0)a[S.me][name]=kg;else delete a[S.me][name];lsSet("dpc-cur",JSON.stringify(a));}
+function curSeed(){
+  if(!S.me) return;
+  var a=curAll(),m=a[S.me]=a[S.me]||{},ch=false,last={};
+  S.log.forEach(function(x){if(x.u!==S.me||!(x.kg>0)) return;var o=last[x.e];if(!o||x.d>=o.d) last[x.e]=x;});
+  Object.keys(last).forEach(function(k){if(!(m[k]>0)){m[k]=last[k].kg;ch=true;}});
+  if(ch) lsSet("dpc-cur",JSON.stringify(a));
+}
 function history(user,name){
   return S.log.filter(function(x){return x.u===user&&x.e===name;}).sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0;});
 }
@@ -773,6 +785,10 @@ function applyOpsLocal(ops){
   ops.forEach(function(o){
     S.log=S.log.filter(function(x){return !(x.u===S.me&&x.d===o.date&&x.e===o.ex);});
     if(o.kg!==null&&o.kg!==undefined) S.log.push({u:S.me,d:o.date,e:o.ex,kg:o.kg});
+  });
+  ops.forEach(function(o){
+    if(o.kg===null||o.kg===undefined) return;
+    var h=history(S.me,o.ex);if(h.length) curSet(o.ex,h[h.length-1].kg);
   });
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg];})}));}catch(e){}
 }
@@ -795,6 +811,7 @@ function saveMyScheda(scheda,renames){
   return api("saveScheda",{scheda:scheda,renames:renames||[]}).then(function(r){saving--;saveAt=Date.now();return r;},function(e){saving--;throw e;}).then(function(){
     var me=userObj(S.me);
     if(me) me.scheda=scheda;
+    (renames||[]).forEach(function(r){var cv=curAll()[S.me]&&curAll()[S.me][r.from];if(cv>0){curSet(r.to,cv);curSet(r.from,0);}});
     (renames||[]).forEach(function(r){S.log.forEach(function(x){if(x.u===S.me&&x.e===r.from) x.e=r.to;});});
     try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg];})}));}catch(e){}
   });
@@ -865,6 +882,11 @@ function progHint(name,h){
 }
 function exRow(e){
   var name=e.n,h=history(S.me,name),pr=rx(e);
+  if(!h.length&&curGet(name)&&!(libOf(name)&&libOf(name).eq==="x")){
+    var cw=curGet(name);
+    return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+'peso attuale · nessuna sessione registrata</div></div><div class="kg">'+fmt(cw)+' <small>kg</small></div></button>'+
+      '<button class="qk" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi questo peso ('+fmt(cw)+' kg)">✓</button></div>';
+  }
   if(!h.length) return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'" style="opacity:.8"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+(libOf(name)&&libOf(name).eq==="x"?"a corpo libero":"nessun dato, tocca per aggiungere")+'</div></div><div class="kg">—</div></button></div>';
   var l=h[h.length-1];
   var d=h.length>1?deltaHTML(l.kg-h[h.length-2].kg):'<span class="d eq">primo dato</span>';
@@ -1357,7 +1379,7 @@ function openDetail(name){
   var bw=libOf(name)&&libOf(name).eq==="x";
   if(bw) html+=goalCardHTML(name)||'<div class="card sub" style="margin-top:12px">Esercizio di supporto: a corpo libero, non serve il peso.</div>';
   else html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
-    '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
+    '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):(curGet(name)?esc(fmt(curGet(name))):""))+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
     '<button class="btn" type="button" data-act="addw" style="flex:1 1 100%">Salva peso</button></div>'+
     '<div class="err" id="a-note"></div></div>';
@@ -1974,8 +1996,8 @@ $("v-ex").addEventListener("click",function(e){
   if((b=e.target.closest("[data-g]"))){var k=b.dataset.g;openG[k]=!openG[k];renderEx();return;}
   if((b=e.target.closest("[data-q]"))){
     var n=b.dataset.q,h=history(S.me,n);
-    if(!h.length)return;
-    var kg=h[h.length-1].kg;
+    var kg=h.length?h[h.length-1].kg:curGet(n);
+    if(!(kg>0))return;
     sendOps([{date:iso(new Date()),ex:n,kg:kg}]);
     setStatus("Registrato: "+n+" "+fmt(kg)+" kg");
     return;
