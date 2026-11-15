@@ -76,7 +76,7 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .pill em{font-style:normal;font-weight:600}
 .empty{color:var(--muted);text-align:center;padding:26px 8px}
 .overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
-.sheet{background:var(--bg);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 130px)}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 40px)}
 .sheet h2{font-family:var(--font-display);font-size:26px;margin:0 0 2px}
 .chart{width:100%;height:auto;display:block;margin:10px 0}
 .hist{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
@@ -126,11 +126,6 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .award .aw{font-family:var(--font-display);font-size:28px;color:var(--accent);margin:8px 0 2px;line-height:1.1}
 .award .ad{font-size:14px}
 .award .af{font-size:13px;color:var(--muted);font-style:italic;margin-top:2px}
-.medals{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
-.medals th{font-size:12px;color:var(--muted);font-weight:600;text-align:center;padding:4px 2px}
-.medals th:first-child,.medals td:first-child{text-align:left}
-.medals td{text-align:center;padding:8px 2px;border-top:1px solid var(--line)}
-.medals td:first-child{font-weight:600}
 .wk{font-family:var(--font-display);font-size:20px;margin:16px 0 8px}
 .wk small{font-family:var(--font-body);font-size:13px;color:var(--muted);margin-left:6px}
 .plist .pe{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
@@ -159,8 +154,6 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .tbar .tlabel{font-family:var(--font-display);font-size:38px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbar .tlabel small{font-family:var(--font-body);font-size:16px;opacity:.7;margin-left:4px}
 .tbar .tin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
-.tbar .tmotto{margin-top:20px;font-family:var(--font-display);font-size:26px;line-height:1.15;font-weight:700;color:var(--accent);min-height:60px;text-wrap:balance}
-.tbar[data-state="done"] .tmotto{color:var(--accent-ink)}
 .tbar button{border:0;border-radius:999px;font:600 16px var(--font-body);padding:9px 14px;min-width:52px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .tbar button.on{background:var(--accent);color:var(--accent-ink)}
 .tbar #t-stop{background:transparent;border:1px solid rgba(255,255,255,.35);padding:11px 16px;font-size:15px}
@@ -224,22 +217,18 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
     <button role="tab" id="t-ses" aria-selected="false" data-tab="ses">Sessioni</button>
     <button role="tab" id="t-fr" aria-selected="false" data-tab="fr">Amici</button>
     <button role="tab" id="t-sc" aria-selected="false" data-tab="sc" hidden>Modifica</button>
-    <button role="tab" id="t-tm" aria-selected="false" data-tab="tm" hidden>Pausa</button>
   </nav>
 
   <section id="v-ex">
     <div class="quote" style="margin:4px 2px 0;text-align:center;text-wrap:balance;font:italic 600 15px/1.35 var(--font-display);color:var(--accent)">«Il tuo fisico non riflette le tue intenzioni, racconta le tue abitudini.»</div>
-    <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
     <div id="trend"></div>
-    <div id="goals"></div>
-    <div class="exa"><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button><button class="btn small" type="button" data-exa="wizard">Genera scheda</button></div>
+    <div class="exa"><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button><button class="btn small" type="button" data-exa="wizard">Genera scheda</button><button class="btn ghost small" type="button" id="ex-sb" aria-label="Cerca un esercizio" style="flex:0 0 auto;padding-left:12px;padding-right:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="display:block"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
+    <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" hidden style="margin:2px 0 6px">
     <div id="ex-list"></div>
   </section>
   <section id="v-ses" hidden><div id="ses-list"></div></section>
   <section id="v-fr" hidden></section>
   <section id="v-sc" hidden></section>
-  <section id="v-tm" hidden>
-  </section>
   <div class="status" id="status"></div>
 </div>
 
@@ -331,6 +320,7 @@ function mgLine(g){
 }
 function gBadge(t){
   t=String(t||"Gruppo").trim();
+  if(/^Obiettivo/.test(t)) return "🎯";
   var m=t.match(/(?:^|\s)([A-Za-z0-9])$/);
   return (m?m[1]:t.charAt(0)).toUpperCase();
 }
@@ -772,7 +762,7 @@ function saveMyScheda(scheda,renames){
 }
 
 /* ====== Tab ====== */
-var TABS=["ex","ses","fr","sc"]; // tab "tm" (Pausa) tolto per ora: per rimetterlo aggiungi "tm" qui e togli hidden dal bottone t-tm
+var TABS=["ex","ses","fr","sc"];
 function setTab(t){
   TABS.forEach(function(k){
     $("v-"+k).hidden=(k!==t);
@@ -884,7 +874,6 @@ function trendHTML(){
 }
 function renderEx(){
   $("trend").innerHTML=trendHTML();
-  $("goals").innerHTML=goalsHTML();
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
   var html="";
@@ -1094,7 +1083,7 @@ function chartSVG(h){
 var wzIB={open:false,vals:{},note:""};
 var sedit=null,curEx="",pk=null,wz=null,wzOut=null,curFriend="",cpConfirm=false,useConfirm=false;
 function openSheet(html){$("sheet").innerHTML=html;$("ov").hidden=false;}
-function closeSheet(){gymDraft=null;$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
+function closeSheet(){gymDraft=null;profDraft=null;$("ov").hidden=true;$("sheet").innerHTML="";sedit=null;curEx="";pk=null;wz=null;wzOut=null;wzIB={open:false,vals:{},note:""};curFriend="";cpConfirm=false;useConfirm=false;}
 function closeBtn(){return '<button class="btn ghost small" type="button" data-act="close">Chiudi</button>';}
 
 /* serie di oggi: solo su questo telefono. c = serie selezionata (1..N), N+1 = tutte fatte */
@@ -1122,9 +1111,30 @@ function setSerie(name,k){
   var el=$("srow");if(el) el.innerHTML=serieHTML(name);
 }
 function openSettings(){
-  var g=loadGym();
+  var g=loadGym(),pf=profLoad(),ps=profSummary(pf);
   var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Impostazioni</h2></div>'+closeBtn()+'</div>'+
-    '<button class="card" type="button" data-set="gym" style="width:100%;text-align:left;margin-top:12px;cursor:pointer;color:var(--ink);font:inherit"><b>🏋️ La mia palestra</b><div class="sub" style="margin-top:2px">'+(g?"Lista salvata su questo telefono":"Non ancora impostata: spunta gli attrezzi che hai")+'</div></button>';
+    '<button class="card" type="button" data-set="prof" style="width:100%;text-align:left;margin-top:12px;cursor:pointer;color:var(--ink);font:inherit"><b>👤 Il mio profilo di allenamento</b><div class="sub" style="margin-top:2px">'+(ps?esc(ps):"Età e zone da proteggere: le imposti una volta sola")+'</div></button>'+
+    '<button class="card" type="button" data-set="gym" style="width:100%;text-align:left;margin-top:8px;cursor:pointer;color:var(--ink);font:inherit"><b>🏋️ La mia palestra</b><div class="sub" style="margin-top:2px">'+(g?"Lista salvata su questo telefono":"Non ancora impostata: spunta gli attrezzi che hai")+'</div></button>';
+  openSheet(h);
+}
+/* ====== Il mio profilo di allenamento (età, zone da proteggere): salvato sul telefono ====== */
+var PROF_Z=[["spalle","Spalle"],["ginocchia","Ginocchia"],["schiena","Schiena bassa"],["polsi","Polsi / gomiti"]];
+var profDraft=null;
+function profLoad(){var o;try{o=JSON.parse(lsGet("dpc-prof")||"{}")||{};}catch(e){o={};}var p=o[S.me]||{};return {eta:String(p.eta||""),inf:Array.isArray(p.inf)?p.inf:[]};}
+function profSave(p){var o;try{o=JSON.parse(lsGet("dpc-prof")||"{}")||{};}catch(e){o={};}o[S.me]={eta:p.eta,inf:p.inf};lsSet("dpc-prof",JSON.stringify(o));}
+function profSummary(p){
+  var t=[];
+  if(etaNum(p.eta)!==null) t.push("età "+etaNum(p.eta));
+  if(p.inf.length) t.push("evito: "+p.inf.map(function(z){return PROF_Z.filter(function(x){return x[0]===z;})[0][1].toLowerCase();}).join(", "));
+  return t.join(" · ");
+}
+function openProf(){
+  if(!profDraft) profDraft=profLoad();
+  var d=profDraft;
+  var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Il mio profilo di allenamento</h2><div class="sub">Lo imposti una volta: il generatore ne tiene conto da solo.</div></div>'+closeBtn()+'</div>';
+  h+='<label class="l" for="p-eta" style="margin-top:14px">La tua età (facoltativa)</label><input id="p-eta" type="text" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="es. 35" value="'+esc(d.eta)+'"><div class="sub" style="margin-top:6px">Sotto i 18 o sopra i 50 anni riduco le serie e allungo il recupero, senza esercizi troppo tecnici.</div>';
+  h+='<label class="l" style="margin-top:14px">Zone da proteggere (facoltativo)</label><div class="chips">'+PROF_Z.map(function(z){return '<button type="button" class="chip'+(d.inf.indexOf(z[0])>-1?" on":"")+'" data-pz="'+z[0]+'" aria-pressed="'+(d.inf.indexOf(z[0])>-1)+'">'+z[1]+'</button>';}).join("")+'</div><div class="sub" style="margin-top:6px">Gli esercizi che le sollecitano non vengono proposti.</div>';
+  h+='<button class="btn full" type="button" data-act="profsave" style="margin-top:14px">Salva</button><div class="sub" style="margin-top:10px">Resta su questo telefono.</div>';
   openSheet(h);
 }
 var gymDraft=null;
@@ -1226,26 +1236,6 @@ function goalRetest(key,v){
   goalsPut(key,st);
   return goalApply(key,st).then(function(){goalsPut(key,st);return msg;});
 }
-function goalPct(g,st){
-  var last=st.tests[st.tests.length-1].v,n=g.lv.length;
-  if(g.type==="reach") return Math.min(1,(Math.max(1,last)-1)/3);
-  var L=g.lv[st.lvl],inLv=L.fin?Math.min(1,last/st.target):Math.min(1,(last||0)/L.up);
-  return Math.min(1,(st.lvl+inLv)/n);
-}
-function goalsHTML(){
-  var m=goalsMine(),keys=Object.keys(m).filter(function(k){return GOALS[k];});
-  if(!keys.length) return "";
-  return keys.map(function(k){
-    var g=GOALS[k],st=m[k],L=g.lv[st.lvl],last=st.tests[st.tests.length-1];
-    var done=(g.type==="reach"?last.v>=4:(L.fin&&last.v>=st.target));
-    var ago=dayDiff(last.d,iso(new Date()));
-    var pct=Math.round(goalPct(g,st)*100);
-    return '<div class="card" style="margin:8px 0 0;padding:10px 14px"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div style="min-width:0"><b>'+g.ic+' '+esc(g.n)+(g.type==="reps"?' · obiettivo '+st.target+(g.unit==="secondi"?" s":""):'')+'</b><div class="sub" style="margin:2px 0 0">'+(done?"Obiettivo raggiunto! 🎉 Continua per mantenerlo.":"Livello "+(st.lvl+1)+" di "+g.lv.length+": "+esc(L.n))+'</div></div>'+
-      '<button class="btn small" type="button" data-gt="'+k+'">Test</button></div>'+
-      '<div style="height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:var(--accent)"></i></div>'+
-      '<div class="sub" style="margin:6px 0 0">'+(g.type==="reach"?"Ultimo test: "+esc(REACH[Math.max(1,last.v)-1][1]):"Ultimo test: "+last.v+(g.unit==="secondi"?" s":""))+' · '+(ago<=0?"oggi":ago+" giorni fa")+(ago<14?" · rifallo dopo 2-3 settimane":" · è ora di rifare il test")+'</div></div>';
-  }).join("");
-}
 function openGoal(){
   var g=GOALS[gSel],ex=!!goalsMine()[gSel];
   var h='<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>Scheda per un obiettivo</h2><div class="sub">Scegli un movimento: ti guido dal livello più facile fino al traguardo.</div></div>'+closeBtn()+'</div>';
@@ -1277,6 +1267,23 @@ function timerHTML(){
   return '<div class="tbar" id="tbar" data-state="idle"><div class="tprog"><i id="tprog"></i></div><div class="tlabel" id="tlabel">Pausa</div><div class="tin">'+
     '<button type="button" data-t="60" aria-label="Pausa di 60 secondi">60</button><button type="button" data-t="90" aria-label="Pausa di 90 secondi">90</button><button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button><button type="button" id="t-stop" hidden>Stop</button></div></div>';
 }
+function goalOfExercise(name){ // obiettivo attivo il cui esercizio di livello corrente è questo
+  var m=goalsMine(),out=null;
+  Object.keys(m).forEach(function(k){var g=GOALS[k];if(g&&g.lv[m[k].lvl]&&g.lv[m[k].lvl].n===name) out=k;});
+  return out;
+}
+function goalCardHTML(name){
+  var k=goalOfExercise(name);if(!k) return "";
+  var g=GOALS[k],st=goalsMine()[k],L=g.lv[st.lvl],last=st.tests[st.tests.length-1];
+  var h='<div class="card" style="margin-top:12px"><label class="l">🎯 '+esc(g.n)+' · livello '+(st.lvl+1)+' di '+g.lv.length+'</label>';
+  if(g.type==="reach"){
+    h+='<div class="sub">Ultimo: '+esc(REACH[Math.max(1,last.v)-1][1])+'. Quando senti di essere arrivato più in là, aggiornalo.</div><button class="btn full" type="button" data-gt="'+k+'" style="margin-top:8px">Aggiorna dove arrivo</button>';
+  }else{
+    var goalTxt=L.fin?"Il tuo obiettivo è "+st.target+(g.unit==="secondi"?" secondi":"")+".":"Per passare al livello dopo servono "+L.up+(g.unit==="secondi"||/secondi/.test(L.n)?" secondi":"")+".";
+    h+='<div class="sub">'+goalTxt+'</div><label class="l" for="g-test" style="margin-top:10px">Quante ne hai fatte nella serie migliore?</label><div class="row" style="flex-wrap:wrap"><input id="g-test" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="0" style="flex:1 1 100px"><button class="btn" type="button" data-act="goalsave" data-key="'+k+'" style="flex:1 1 140px">Salva</button></div><div class="err" id="g-note"></div>';
+  }
+  return h+'</div>';
+}
 function openDetail(name){
   curEx=name;
   var h=history(S.me,name);
@@ -1296,7 +1303,7 @@ function openDetail(name){
   html+='<div class="card" style="margin-top:12px"><label class="l">Serie di oggi</label><div id="srow">'+serieHTML(name)+'</div></div>';
   html+=timerHTML();
   var bw=libOf(name)&&libOf(name).eq==="x";
-  if(bw) html+='<div class="card sub" style="margin-top:12px">Per l\'obiettivo non serve registrare il peso: ogni 2-3 settimane fai il test dalla card 🎯 in cima alla Scheda.</div>';
+  if(bw) html+=goalCardHTML(name)||'<div class="card sub" style="margin-top:12px">Esercizio di supporto: a corpo libero, non serve il peso.</div>';
   else html+='<div class="card" style="margin-top:12px"><label class="l" for="a-kg">Aggiungi peso</label>'+
     '<div class="row" style="flex-wrap:wrap"><div class="kgwrap" style="flex:1 1 110px"><input type="text" inputmode="decimal" id="a-kg" value="'+(last?esc(fmt(last.kg)):"")+'" placeholder="0" aria-label="Peso in kg"><i>kg</i></div>'+
     '<input type="date" id="a-date" value="'+iso(new Date())+'" style="flex:1 1 150px" aria-label="Data">'+
@@ -1474,29 +1481,6 @@ function awardsHTML(ws){
   h+=awardCard("🤔","Sollevatore di dubbi","Ultimo posto più spesso sullo stesso esercizio (con affetto)",
     r.dubbi?joinNames(r.dubbi.names):"",r.dubbi?r.dubbi.lasts+" volte ultimo su "+r.dubbi.of+" sfide":noContest,pickLine(DUB_L,ws,"d"));
   return h;
-}
-function medalsHTML(curWs){
-  if(!S.log.length) return "";
-  var first=S.log.reduce(function(m,x){return x.d<m?x.d:m;},S.log[0].d);
-  var w=weekStart(first),last=addDaysIso(curWs,-7);
-  var t={};
-  S.users.forEach(function(u){t[u.name]={a:0,r:0,p:0,d:0};});
-  var n=0;
-  while(w<=last&&n<260){
-    var r=computeAwards(w);
-    [["arnold","a"],["razzo","r"],["presenza","p"],["dubbi","d"]].forEach(function(k){
-      var x=r[k[0]];
-      if(!x) return;
-      (x.names||[x.name]).forEach(function(nm){if(t[nm]) t[nm][k[1]]++;});
-    });
-    w=addDaysIso(w,7);n++;
-  }
-  var names=Object.keys(t);
-  var any=names.some(function(k){return t[k].a+t[k].r+t[k].p+t[k].d>0;});
-  if(!any) return '<div class="wk">Medagliere</div><div class="card sub" style="margin-top:0">Si riempie a fine settimana, quando i premi vengono assegnati.</div>';
-  names.sort(function(x,y){return (t[y].a-t[x].a)||(t[y].r-t[x].r)||(t[y].p-t[x].p);});
-  return '<div class="wk">Medagliere</div><div class="card"><table class="medals"><tr><th></th><th>🏆</th><th>🚀</th><th>🔩</th><th>🤔</th></tr>'+
-    names.map(function(k){return '<tr><td>'+esc(k)+(k===S.me?" (tu)":"")+'</td><td>'+t[k].a+'</td><td>'+t[k].r+'</td><td>'+t[k].p+'</td><td>'+t[k].d+'</td></tr>';}).join("")+'</table></div>';
 }
 function premiHTML(){
   var today=iso(new Date()),ws=weekStart(today);
@@ -1711,7 +1695,7 @@ var WZOPT=[
   ["inf","Zone da proteggere (facoltativo)",[["spalle","Spalle"],["ginocchia","Ginocchia"],["schiena","Schiena bassa"],["polsi","Polsi / gomiti"]]]
 ];
 function openWizard(){
-  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:[],eta:"",gymOn:!!loadGym(),adv:false};
+  wz={stile:"full",giorni:3,durata:45,obi:"massa",focus:"totale",liv:"principiante",att:["m","c","l"],inf:profLoad().inf.slice(),eta:profLoad().eta,gymOn:!!loadGym(),adv:false};
   wzOut=null;useConfirm=false;wzIB={open:false,vals:{},note:""};
   renderWizard();
 }
@@ -1757,6 +1741,7 @@ function renderWizard(){
       return r;
     };
     var ADV=["stile","inf"];
+    var pfs=profSummary({eta:wz.eta,inf:wz.inf});
     // base: poche domande (compresi gli attrezzi)
     WZOPT.forEach(function(o){
       if(ADV.indexOf(o[0])>=0) return;
@@ -1766,13 +1751,12 @@ function renderWizard(){
       }
       html+=chipRow(o);
     });
+    if(pfs) html+='<div class="sub" style="margin-top:14px;color:var(--ink)">👤 Tengo conto del tuo profilo ('+esc(pfs)+'). Lo cambi da ⚙️ → Il mio profilo.</div>';
     // opzioni avanzate, chiuse di default
     html+='<button class="btn ghost full" type="button" data-act="wzadv" aria-expanded="'+!!wz.adv+'" style="margin-top:18px">⚙️ Opzioni avanzate '+(wz.adv?"▴":"▾")+'</button>';
     if(wz.adv){
       html+='<div class="card" style="margin-top:8px">';
       WZOPT.forEach(function(o){if(o[0]==="stile") html+=chipRow(o);});
-      WZOPT.forEach(function(o){if(o[0]==="inf") html+=chipRow(o);});
-      html+='<label class="l" for="wz-eta" style="margin-top:14px">La tua età (facoltativa)</label><input id="wz-eta" type="text" inputmode="numeric" autocomplete="off" maxlength="2" placeholder="es. 35" value="'+esc(String(wz.eta||""))+'"><div class="sub" style="margin-top:6px">Sotto i 18 o sopra i 50 anni riduco le serie e allungo il recupero, senza esercizi troppo tecnici.</div>';
       html+=ibHTML();
       html+='<label class="l" style="margin-top:14px">Un movimento da conquistare</label><button class="btn ghost full" type="button" data-act="goalopen">🎯 Scheda per un obiettivo (corpo libero)</button><div class="sub" style="margin-top:6px">Percorso guidato verso piegamenti, trazioni, squat, plank o toccarsi i piedi.</div>';
       html+='</div>';
@@ -1856,18 +1840,6 @@ function useWizardScheda(){
 }
 
 /* ====== Frasi e timer ====== */
-var MOTTI=[
-  "{n}, sei un grande!","Mamma mia quanto sei grosso oggi!","Un'altra serie e sei una furia!",
-  "Questo carico non sa chi sei, ma lo scoprirà.","Tecnica pulita, braccia da copertina.",
-  "Oggi si cresce, il divano può aspettare.","Il trainer sarebbe fiero di te.","Respira, spingi, domina.",
-  "Un'altra ripetizione e il carico si arrende.","Questa palestra è piccola per te.",
-  "Arnold vorrebbe sapere come fai ad essere così strong.","Da lassù Chuck sarebbe fiero di te."
-];
-var mottoI=-1;
-function nextMotto(){
-  var i;do{i=Math.floor(Math.random()*MOTTI.length);}while(i===mottoI&&MOTTI.length>1);
-  mottoI=i;
-}
 var tm={end:0,total:0,iv:null,state:"idle"};
 var actx=null;
 function audioCtx(){try{if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume();}catch(e){}}
@@ -1896,7 +1868,7 @@ function paintTimer(left){
 function tick(){
   var ms=tm.end-Date.now(),left=Math.ceil(ms/1000);
   if(left<=0){
-    clearInterval(tm.iv);tm.iv=null;tm.state="done";nextMotto();paintTimer(0);
+    clearInterval(tm.iv);tm.iv=null;tm.state="done";paintTimer(0);
     if(ms>-3000)beep();
     return;
   }
@@ -1905,7 +1877,7 @@ function tick(){
 function startTimer(s){
   audioCtx();clearInterval(tm.iv);
   tm.total=s;tm.end=Date.now()+s*1000;tm.state="run";
-  nextMotto();tick();tm.iv=setInterval(tick,250);
+  tick();tm.iv=setInterval(tick,250);
 }
 function stopTimer(){clearInterval(tm.iv);tm.iv=null;tm.state="idle";paintTimer(0);}
 
@@ -1918,6 +1890,8 @@ $("b-logout").addEventListener("click",function(){doLogout(false);});
 $("b-set").addEventListener("click",openSettings);
 $("b-refresh").addEventListener("click",function(){setStatus("Aggiorno…");loadState();});
 $("ex-q").addEventListener("input",renderEx);
+$("ex-sb").addEventListener("click",function(){var q=$("ex-q");q.hidden=!q.hidden;if(!q.hidden)q.focus();else{q.value="";renderEx();}});
+$("ex-q").addEventListener("blur",function(){if(!$("ex-q").value){$("ex-q").hidden=true;}});
 
 $("v-ex").addEventListener("click",function(e){
   var b;
@@ -1937,7 +1911,6 @@ $("v-ex").addEventListener("click",function(e){
   }
   if((b=e.target.closest("[data-ex]")))openDetail(b.dataset.ex);
 });
-$("goals").addEventListener("click",function(e){var b=e.target.closest("[data-gt]");if(b)openGoalTest(b.dataset.gt);});
 $("ex-list").addEventListener("click",function(e){
   var b=e.target.closest("[data-stall]");if(!b) return;
   e.stopPropagation();
@@ -2000,6 +1973,7 @@ $("ov").addEventListener("click",function(e){
     if(a==="pkcustom") return addCustom();
     if(a==="ibtoggle"){wzIB.open=!wzIB.open;return renderWizard();}
     if(a==="ibapply") return applyIB();
+    if(a==="profsave"){var pe2=$("p-eta");profDraft.eta=pe2?pe2.value.replace(/\D/g,""):profDraft.eta;profSave(profDraft);profDraft=null;openSettings();setStatus("Profilo salvato.");return;}
     if(a==="wzadv"){wz.adv=!wz.adv;return renderWizard();}
     if(a==="goalopen"){gSel=gSel||"push";return openGoal();}
     if(a==="goalmake"){
@@ -2037,9 +2011,11 @@ $("ov").addEventListener("click",function(e){
     if(a==="wzback"){wzOut=null;useConfirm=false;return renderWizard();}
     if(a==="wzuse") return useWizardScheda();
   }
+  if((b=t.closest("[data-gt]"))){openGoalTest(b.dataset.gt);return;}
   if((b=t.closest("[data-gs]"))){gSel=b.dataset.gs;openGoal();return;}
   if((b=t.closest("[data-gr]"))){gReach=+b.dataset.gr;if(b.dataset.gtest)openGoalTest(b.dataset.gtest);else openGoal();return;}
-  if((b=t.closest("[data-set]"))){if(b.dataset.set==="gym")openGym();return;}
+  if((b=t.closest("[data-set]"))){if(b.dataset.set==="gym")openGym();if(b.dataset.set==="prof"){profDraft=null;openProf();}return;}
+  if((b=t.closest("[data-pz]"))&&profDraft){var pe=$("p-eta");if(pe)profDraft.eta=pe.value.replace(/\D/g,"");var zi=profDraft.inf.indexOf(b.dataset.pz);if(zi>-1)profDraft.inf.splice(zi,1);else profDraft.inf.push(b.dataset.pz);return openProf();}
   if((b=t.closest("[data-gk]"))&&gymDraft){var gi2=gymDraft.indexOf(b.dataset.gk);if(gi2>-1)gymDraft.splice(gi2,1);else gymDraft.push(b.dataset.gk);return renderGym();}
   if((b=t.closest("[data-gact]"))&&gymDraft){return gymAct(b.dataset.gact);}
   if((b=t.closest("[data-sr]"))&&curEx){setSerie(curEx,+b.dataset.sr);return;}
@@ -2069,7 +2045,6 @@ $("ov").addEventListener("click",function(e){
 });
 $("ov").addEventListener("input",function(e){
   if(pk&&e.target.id==="pk-q"){pk.q=e.target.value;renderPicker();}
-  if(wz&&e.target.id==="wz-eta") wz.eta=e.target.value.replace(/\D/g,"");
   if(wz&&e.target.id&&e.target.id.indexOf("ib-")===0) wzIB.vals[e.target.id]=e.target.value;
 });
 $("ov").addEventListener("change",function(e){
@@ -2095,8 +2070,6 @@ document.addEventListener("visibilitychange",function(){
 });
 
 /* ====== Avvio ====== */
-nextMotto();
-setInterval(nextMotto,12000);
 var tok=lsGet("dpc-token");
 if(tok){
   S.token=tok;
@@ -2104,7 +2077,7 @@ if(tok){
     var c=JSON.parse(lsGet("dpc-cache")||"null");
     if(c){applyState({me:c.me,users:c.users,log:c.log});}
   }catch(e){}
-  showApp();renderAll();nextMotto();
+  showApp();renderAll();
   loadState();
 }else{
   showAuth();
