@@ -155,13 +155,13 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
 .exa{display:flex;gap:8px;margin:4px 0 6px}
 .exa .btn{flex:1}
 /* Timer (tab Pausa, per ora nascosto) */
-.tbar{position:relative;overflow:hidden;background:var(--navy);color:#fff;border-radius:14px;border-top:3px solid var(--accent);padding:26px 16px 22px;text-align:center}
-.tbar .tlabel{font-family:var(--font-display);font-size:64px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbar{position:relative;overflow:hidden;background:var(--navy);color:#fff;border-radius:14px;border-top:3px solid var(--accent);padding:12px 14px;margin:10px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tbar .tlabel{font-family:var(--font-display);font-size:38px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbar .tlabel small{font-family:var(--font-body);font-size:16px;opacity:.7;margin-left:4px}
-.tbar .tin{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:18px}
+.tbar .tin{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
 .tbar .tmotto{margin-top:20px;font-family:var(--font-display);font-size:26px;line-height:1.15;font-weight:700;color:var(--accent);min-height:60px;text-wrap:balance}
 .tbar[data-state="done"] .tmotto{color:var(--accent-ink)}
-.tbar button{border:0;border-radius:999px;font:600 18px var(--font-body);padding:12px 20px;min-width:64px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
+.tbar button{border:0;border-radius:999px;font:600 16px var(--font-body);padding:9px 14px;min-width:52px;cursor:pointer;background:rgba(255,255,255,.14);color:#fff}
 .tbar button.on{background:var(--accent);color:var(--accent-ink)}
 .tbar #t-stop{background:transparent;border:1px solid rgba(255,255,255,.35);padding:11px 16px;font-size:15px}
 .tbar #t-stop[hidden]{display:none}
@@ -227,14 +227,6 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
   </nav>
 
   <section id="v-ex">
-    <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin-bottom:4px">
-    <div class="exa"><button class="btn small" type="button" data-exa="wizard">Genera scheda</button><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button></div>
-    <div id="ex-list"></div>
-  </section>
-  <section id="v-ses" hidden><div id="ses-list"></div></section>
-  <section id="v-fr" hidden></section>
-  <section id="v-sc" hidden></section>
-  <section id="v-tm" hidden>
     <div class="tbar" id="tbar" data-state="idle">
       <div class="tprog"><i id="tprog"></i></div>
       <div class="tlabel" id="tlabel">Pausa</div>
@@ -244,8 +236,16 @@ input,select{width:100%;font:16px var(--font-body);color:var(--ink);background:v
         <button type="button" data-t="120" aria-label="Pausa di 120 secondi">120</button>
         <button type="button" id="t-stop" hidden>Stop</button>
       </div>
-      <div class="tmotto" id="tmotto"></div>
     </div>
+    <input type="search" id="ex-q" placeholder="Cerca esercizio…" aria-label="Cerca esercizio" autocomplete="off" style="margin:8px 0 4px">
+    <div id="trend"></div>
+    <div class="exa"><button class="btn small" type="button" data-exa="wizard">Genera scheda</button><button class="btn ghost small" type="button" data-exa="edit">Modifica scheda</button></div>
+    <div id="ex-list"></div>
+  </section>
+  <section id="v-ses" hidden><div id="ses-list"></div></section>
+  <section id="v-fr" hidden></section>
+  <section id="v-sc" hidden></section>
+  <section id="v-tm" hidden>
   </section>
   <div class="status" id="status"></div>
 </div>
@@ -759,7 +759,6 @@ function setTab(t){
     $("v-"+k).hidden=(k!==t);
     $("t-"+k).setAttribute("aria-selected",k===t?"true":"false");
   });
-  if(t==="tm"&&!$("tmotto").textContent)nextMotto();
   renderAll();
   window.scrollTo(0,0);
 }
@@ -783,7 +782,33 @@ function warmHTML(g){
   var mob=[];if(up) mob.push("10 rotazioni di spalle");if(low) mob.push("10 squat a corpo libero");
   return '<div class="sub" style="padding:6px 14px 0">🔥 Riscaldamento: 5\' di cardio leggero'+(mob.length?", "+mob.join(" e "):"")+" e 2 serie leggere del primo esercizio (circa metà carico).</div>";
 }
+// stallo: stesso peso nelle ultime 4 registrazioni, distribuite su almeno 2 settimane, ultima negli ultimi 28 giorni
+function stallInfo(name){
+  var h=history(S.me,name);
+  if(h.length<4) return null;
+  var l4=h.slice(-4),kg=l4[3].kg;
+  if(!(kg>0)||l4.some(function(x){return x.kg!==kg;})) return null;
+  if(dayDiff(l4[0].d,l4[3].d)<14||dayDiff(l4[3].d,iso(new Date()))>=28) return null;
+  return {kg:kg};
+}
+function stallPlan(e,kg){
+  var r=parseInt(singleReps(e.r,e.n),10);if(!isFinite(r)) r=10;
+  var lb=libOf(e.n),st=lb&&lb.c?2.5:1;
+  if(r>=10){var nr=r>=15?12:8;return {r:String(nr),kg:kg+st,txt:"passa a "+nr+" ripetizioni con "+fmt(kg+st)+" kg"};}
+  var lw=Math.round(kg*0.9*2)/2;
+  return {r:"12",kg:lw,txt:"passa a 12 ripetizioni con "+fmt(lw)+" kg"};
+}
+function stallHTML(e,kg){
+  var pl=stallPlan(e,kg);
+  return '<div class="sub" style="padding:4px 14px 8px;color:var(--accent)">⚠️ In stallo a '+fmt(kg)+' kg: prova a cambiare le ripetizioni, '+esc(pl.txt)+'. <button class="btn ghost small" type="button" data-stall="'+esc(e.n)+'" style="margin-left:4px">Imposta '+pl.r+' rip.</button></div>';
+}
+function stalledList(){
+  var out=[];
+  mySchedaObj().forEach(function(g){(g.ex||[]).forEach(function(e){var s2=stallInfo(e.n);if(s2&&out.indexOf(e.n)<0) out.push(e.n);});});
+  return out;
+}
 function progHint(name,h){
+  if(stallInfo(name)) return "";
   if(h.length<2) return "";
   var a=h[h.length-1].kg,b=h[h.length-2].kg;
   if(!(a>0)||a!==b) return "";
@@ -797,9 +822,49 @@ function exRow(e){
   var d=h.length>1?deltaHTML(l.kg-h[h.length-2].kg):'<span class="d eq">primo dato</span>';
   var done=(l.d===iso(new Date()));
   return '<div class="exw"><button class="ex" type="button" data-ex="'+esc(name)+'"><div><div class="n">'+esc(name)+'</div><div class="m">'+(pr?esc(pr)+" · ":"")+h.length+(h.length===1?" volta":" volte")+' · '+dshort(l.d)+progHint(name,h)+'</div></div><div class="kg">'+fmt(l.kg)+' <small>kg</small><div>'+d+'</div></div></button>'+
-    '<button class="qk'+(done?" on":"")+'" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi lo stesso peso ('+fmt(l.kg)+' kg)">✓</button></div>';
+    '<button class="qk'+(done?" on":"")+'" type="button" data-q="'+esc(name)+'" aria-label="Registra oggi lo stesso peso ('+fmt(l.kg)+' kg)">✓</button></div>'+(stallInfo(name)?stallHTML(e,l.kg):'');
+}
+/* ====== Esito andamentale ====== */
+function dayDiff(a,b){return Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000);}
+function trendInfo(){
+  var today=iso(new Date()),mine=S.log.filter(function(x){return x.u===S.me;});
+  var dates={};mine.forEach(function(x){dates[x.d]=1;});
+  var all=Object.keys(dates).sort();
+  if(all.length<2) return null;
+  var win=all.filter(function(d){var n=dayDiff(d,today);return n>=0&&n<28;});
+  var days=mySchedaObj().filter(function(g){return g.ex&&g.ex.length;}).length||3;
+  var weeks=Math.min(4,Math.max(1,Math.ceil((dayDiff(all[0],today)+1)/7)));
+  var r=(win.length/weeks)/days;
+  var up=0,same=0,down=0;
+  myExNamesAll(mine).forEach(function(n){
+    var h=history(S.me,n);
+    if(h.length<2) return;
+    var l=h[h.length-1],pv=h[h.length-2],dd=dayDiff(l.d,today);
+    if(dd<0||dd>=28) return;
+    if(l.kg>pv.kg) up++;else if(l.kg<pv.kg) down++;else same++;
+  });
+  return {r:r,days:days,n:win.length,since:dayDiff(all[all.length-1],today),up:up,same:same,down:down,cmp:up+same+down};
+}
+function myExNamesAll(rows){var m={},o=[];rows.forEach(function(x){if(!m[x.e]){m[x.e]=1;o.push(x.e);}});return o;}
+function stallLine(){
+  var l=stalledList();if(!l.length) return '';
+  var nm=l.slice(0,2).join(", ")+(l.length>2?" e altri "+(l.length-2):"");
+  return '<span class="sub" style="display:block;margin-top:4px;color:var(--accent)">⚠️ In stallo: '+esc(nm)+'. Prova a cambiare le ripetizioni: i dettagli sono sotto l\'esercizio.</span>';
+}
+function trendHTML(){
+  var t=trendInfo(),ic="💪",msg;
+  if(!t) return '';
+  if(t.since>=14){ic="⏰";msg="Sono passati "+t.since+" giorni dall'ultimo allenamento: riparti con calma e riprendi il ritmo.";}
+  else if(t.r<0.6){ic="📈";msg="Stai andando a ritmo ridotto: aumenta la frequenza per centrare i tuoi obiettivi.";}
+  else if(t.r<0.9){ic="👍";msg="Ci sei quasi: ancora qualche allenamento in più e sei in linea con la tua scheda.";}
+  else if(t.cmp>=2&&t.up/t.cmp>=0.6){ic="🔥";msg="Bravo, stai progredendo coi carichi in modo costante.";}
+  else if(t.cmp>=2&&t.down/t.cmp>=0.5){ic="🛌";msg="Ottima costanza, ma i carichi stanno calando: cura recupero e sonno.";}
+  else if(t.cmp>=2&&t.same/t.cmp>=0.6){ic="💪";msg="Stai avendo la giusta costanza: puoi osare coi pesi.";}
+  else{ic="✅";msg="Stai avendo la giusta costanza, continua così.";}
+  return '<div class="card" style="margin:10px 0 4px;padding:10px 14px;display:flex;gap:10px;align-items:center"><span style="font-size:22px" aria-hidden="true">'+ic+'</span><span><b>'+esc(msg)+'</b><span class="sub" style="display:block;margin-top:2px">Ultime 4 settimane: '+t.n+(t.n===1?" allenamento":" allenamenti")+'.</span>'+stallLine()+'</span></div>';
 }
 function renderEx(){
+  $("trend").innerHTML=trendHTML();
   var q=norm($("ex-q").value);
   var sch=mySchedaObj();
   var html="";
@@ -1029,12 +1094,22 @@ function addWeight(){
 }
 
 /* ====== Sessioni ====== */
+var sesMonth=""; // "" = mese più recente, "all" = tutti, altrimenti "AAAA-MM"
+var MESI=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+function mLabel(m){return MESI[+m.slice(5,7)-1]+" "+m.slice(0,4);}
 function renderSes(){
   var by={};
   S.log.filter(function(x){return x.u===S.me;}).forEach(function(x){(by[x.d]=by[x.d]||[]).push(x);});
   var dates=Object.keys(by).sort().reverse();
   if(!dates.length){$("ses-list").innerHTML='<div class="empty">Nessun allenamento salvato.</div>';return;}
-  $("ses-list").innerHTML=dates.map(function(d){
+  var months=[];dates.forEach(function(d){var m=d.slice(0,7);if(months.indexOf(m)<0)months.push(m);});
+  var cur=sesMonth;
+  if(cur!=="all"&&months.indexOf(cur)<0) cur=months[0]; // vuoto o mese senza più dati: il più recente
+  var shown=cur==="all"?dates:dates.filter(function(d){return d.slice(0,7)===cur;});
+  var nEx=0;shown.forEach(function(d){nEx+=by[d].length;});
+  var head='<div class="chips" style="margin-bottom:8px">'+months.map(function(m){return '<button type="button" class="chip'+(cur===m?" on":"")+'" data-sm="'+m+'">'+esc(mLabel(m))+'</button>';}).join("")+'<button type="button" class="chip'+(cur==="all"?" on":"")+'" data-sm="all">Tutti</button></div>'+
+    '<div class="sub" style="margin-bottom:10px">'+shown.length+(shown.length===1?" allenamento":" allenamenti")+' · '+nEx+(nEx===1?" esercizio":" esercizi")+'</div>';
+  $("ses-list").innerHTML=head+shown.map(function(d){
     var list=by[d];
     var pills=list.map(function(x){
       var prev=lastBefore(S.me,x.e,d);
@@ -1548,7 +1623,6 @@ var mottoI=-1;
 function nextMotto(){
   var i;do{i=Math.floor(Math.random()*MOTTI.length);}while(i===mottoI&&MOTTI.length>1);
   mottoI=i;
-  $("tmotto").textContent=MOTTI[i].replace("{n}",S.me||"Campione");
 }
 var tm={end:0,total:0,iv:null,state:"idle"};
 var actx=null;
@@ -1618,7 +1692,21 @@ $("v-ex").addEventListener("click",function(e){
   }
   if((b=e.target.closest("[data-ex]")))openDetail(b.dataset.ex);
 });
-$("ses-list").addEventListener("click",function(e){var b=e.target.closest("[data-ses]");if(b)openSession(b.dataset.ses);});
+$("ex-list").addEventListener("click",function(e){
+  var b=e.target.closest("[data-stall]");if(!b) return;
+  e.stopPropagation();
+  var nm=b.dataset.stall,sch=cloneScheda(mySchedaObj()),kg=(stallInfo(nm)||{}).kg,done=false;
+  sch.forEach(function(g){g.ex.forEach(function(x){
+    if(x.n===nm&&!done&&kg){x.r=stallPlan(x,kg).r;done=true;}
+  });});
+  if(!done) return;
+  setStatus("Salvo…");
+  saveMyScheda(sch,[]).then(function(){renderAll();setStatus("Ripetizioni aggiornate.");}).catch(function(err){setStatus("Non salvato: "+err.message);});
+});
+$("ses-list").addEventListener("click",function(e){
+  var m=e.target.closest("[data-sm]");if(m){sesMonth=m.dataset.sm;renderSes();return;}
+  var b=e.target.closest("[data-ses]");if(b)openSession(b.dataset.ses);
+});
 $("v-fr").addEventListener("click",function(e){
   var m=e.target.closest("[data-fr]");
   if(m){frMode=m.dataset.fr;renderFriends();return;}
