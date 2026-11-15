@@ -773,10 +773,16 @@ function applyOpsLocal(ops){
   });
   try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg];})}));}catch(e){}
 }
+var opsChain=Promise.resolve();
 function sendOps(ops){
   applyOpsLocal(ops);
   renderAll();
-  return api("ops",{ops:ops}).catch(function(e){
+  saving++;
+  // un invio alla volta, nell'ordine in cui li fai: due salvataggi contemporanei sul foglio possono sovrascriversi
+  var job=opsChain.then(function(){return api("ops",{ops:ops});});
+  opsChain=job.catch(function(){});
+  return job.then(function(){saving--;saveAt=Date.now();},function(e){
+    saving--;saveAt=Date.now();
     setStatus("Salvataggio non riuscito ("+e.message+"). Ricarico i dati.");
     return loadState();
   });
