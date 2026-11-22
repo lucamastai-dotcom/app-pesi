@@ -45,6 +45,18 @@ h1{font-family:var(--font-display);font-size:32px;line-height:1;margin:0;text-wr
 h1 span{color:var(--accent)}
 .sub{color:var(--muted);font-size:14px;margin-top:4px}
 .hbtns{display:flex;gap:6px}
+.cogrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.cogrid>div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.cogrid b{display:block;font:700 20px var(--font-display)}
+.cogrid span{font-size:12px;color:var(--muted)}
+.cogrid i{font-style:normal;font-size:12px;color:var(--muted);margin-left:4px}
+.cotbl{width:100%;border-collapse:collapse;font-size:15px}
+.cotbl td,.cotbl th{padding:7px 4px;border-top:1px solid var(--line);text-align:right}
+.cotbl th{font-size:12px;color:var(--muted);font-weight:600;border-top:0}
+.cotbl td:first-child,.cotbl th:first-child{text-align:left}
+.cochips{display:flex;gap:6px;overflow-x:auto;margin:2px 0 8px;padding-bottom:2px}
+.cochips button{flex:none;border:1px solid var(--line);background:var(--bg);color:var(--muted);font:600 13px var(--font-body);padding:7px 11px;border-radius:999px;cursor:pointer}
+.cochips button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin:8px 0 16px;position:sticky;top:6px;z-index:5}
 nav button{flex:1;border:0;background:transparent;color:var(--muted);font:600 13px var(--font-body);padding:10px 4px;border-radius:9px;cursor:pointer}
 nav button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -225,6 +237,7 @@ nav button[aria-selected="true"] .bdot{background:var(--accent-ink)}
     <div class="hbtns">
       <button class="btn ghost small" id="b-refresh" type="button" aria-label="Aggiorna">Aggiorna</button>
       <button class="btn ghost small" id="b-logout" type="button">Esci</button>
+      <button class="btn ghost small" id="b-body" type="button" aria-label="Corpo, misure della bilancia" style="padding-left:10px;padding-right:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 9a4 4 0 0 1 8 0"/><path d="M12 9l2-1.6"/></svg></button>
       <button class="btn ghost small" id="b-set" type="button" aria-label="Impostazioni" style="padding-left:10px;padding-right:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
@@ -233,6 +246,7 @@ nav button[aria-selected="true"] .bdot{background:var(--accent-ink)}
     <button role="tab" id="t-ses" aria-selected="false" data-tab="ses">Sessioni</button>
     <button role="tab" id="t-fr" aria-selected="false" data-tab="fr">Amici</button>
     <button role="tab" id="t-sc" aria-selected="false" data-tab="sc" hidden>Modifica</button>
+    <button role="tab" id="t-co" aria-selected="false" data-tab="co" hidden>Corpo</button>
   </nav>
 
   <section id="v-ex">
@@ -245,6 +259,7 @@ nav button[aria-selected="true"] .bdot{background:var(--accent-ink)}
   <section id="v-ses" hidden><div id="ses-list"></div></section>
   <section id="v-fr" hidden></section>
   <section id="v-sc" hidden></section>
+  <section id="v-co" hidden></section>
   <div class="status" id="status"></div>
 </div>
 
@@ -706,7 +721,7 @@ function cloneScheda(s){return JSON.parse(JSON.stringify(s));}
 function freshIds(s){var c=cloneScheda(s);c.forEach(function(g){g.id=uid();g.ex.forEach(function(e){e.id=uid();});});return c;}
 
 /* ====== Stato e backend ====== */
-var S={token:"",me:"",users:[],log:[],board:[]}; // log: {u,d,e,kg,m,k,p}; board: {id,u,t,x,r}
+var S={token:"",me:"",users:[],log:[],board:[],corpo:[]}; // log: {u,d,e,kg,m,k,p}; board: {id,u,t,x,r}
 var mode="login";
 var lastSync=0;
 
@@ -731,7 +746,7 @@ function api1(action,payload){
     .then(function(j){if(!j||!j.ok) throw new Error((j&&j.error)||"Errore del server"); return j;});
 }
 function setStatus(t){$("status").textContent=t||"";}
-function cacheSave(){try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg,x.m||0,x.k||0,x.p||0];}),board:S.board}));}catch(e){}}
+function cacheSave(){try{lsSet("dpc-cache",JSON.stringify({me:S.me,users:S.users,log:S.log.map(function(x){return [x.u,x.d,x.e,x.kg,x.m||0,x.k||0,x.p||0];}),board:S.board,corpo:S.corpo}));}catch(e){}}
 function applyState(j){
   S.me=j.me;
   S.users=(j.users||[]).map(function(u){return {name:u.name,scheda:Array.isArray(u.scheda)?u.scheda:[]};});
@@ -748,6 +763,7 @@ function applyState(j){
   }else if(!renamedMine&&repsMig&&S.me&&userObj(S.me)) lsSet("dpc-reps1","1");
   S.log=(j.log||[]).map(function(r){return {u:r[0],d:r[1],e:r[2],kg:r[3],m:r[4]||0,k:r[5]||0,p:r[6]||0};});
   S.board=Array.isArray(j.board)?j.board:[];
+  S.corpo=(Array.isArray(j.corpo)?j.corpo:[]).map(function(r){return {d:r[0],h:r[1],v:r[2]};}).sort(function(a,b){return a.d+" "+("0"+a.h).slice(-5)<b.d+" "+("0"+b.h).slice(-5)?-1:1;});
   lastSync=Date.now();
   curSeed();
   cacheSave();
@@ -891,7 +907,7 @@ function saveMyScheda(scheda,renames){
 }
 
 /* ====== Tab ====== */
-var TABS=["ex","ses","fr","sc"];
+var TABS=["ex","ses","fr","sc","co"];
 function setTab(t){
   TABS.forEach(function(k){
     $("v-"+k).hidden=(k!==t);
@@ -910,6 +926,7 @@ function renderAll(){
   if(t==="ses") renderSes();
   if(t==="fr") renderFriends();
   if(t==="sc"&&!draft) renderScheda();
+  if(t==="co") renderCorpo();
   updateBadge();
 }
 
@@ -2465,12 +2482,153 @@ document.addEventListener("visibilitychange",function(){
 });
 
 /* ====== Avvio ====== */
+/* ====== Corpo (bilancia impedenziometrica, dati privati) ====== */
+var CO=[ // chiave, etichetta, unità, nome colonna nel CSV (minuscolo)
+ ["kg","Peso","kg","kg"],["imc","IMC","","imc"],["grasso","Massa grassa","%","massa grassa"],["acqua","Acqua","%","acqua"],
+ ["muscoli","Muscoli","%","muscoli"],["ossa","Ossa","kg","ossa"],
+ ["grasso_bs","Grasso braccio sx","%","massa grassa - braccio sinistro"],["grasso_bd","Grasso braccio dx","%","massa grassa - braccio destro"],
+ ["grasso_gs","Grasso gamba sx","%","massa grassa - gamba sinistra"],["grasso_gd","Grasso gamba dx","%","massa grassa - gamba destra"],
+ ["grasso_tronco","Grasso tronco","%","massa grassa - tronco"],["grasso_visc","Grasso viscerale (%)","%","massa grassa - viscerale"],
+ ["musc_bs","Muscoli braccio sx","%","muscoli - braccio sinistro"],["musc_bd","Muscoli braccio dx","%","muscoli - braccio destro"],
+ ["musc_gs","Muscoli gamba sx","%","muscoli - gamba sinistra"],["musc_gd","Muscoli gamba dx","%","muscoli - gamba destra"],
+ ["musc_tronco","Muscoli tronco","%","muscoli - tronco"],["eta_metab","Età metabolica","anni","età metabolica"],
+ ["visc","Grasso viscerale","","grasso viscerale"],["bpm","Battito","bpm","battito"],["soft_lean","Soft lean mass","kg","soft lean mass"],
+ ["lean_body","Lean body mass","kg","lean body mass"],["proteine","Proteine","kg","proteine"],
+ ["massa_musc_organi","Massa muscolare con organi","kg","massa muscolare incl. muscoli degli organi"]];
+function coIdx(k){for(var i=0;i<CO.length;i++) if(CO[i][0]===k) return i;return -1;}
+var coMetric="kg",coDel="";
+function coNum(x){return x===null||x===undefined?null:x;}
+function coVal(r,k){var i=coIdx(k);return i<0?null:coNum(r.v[i]);}
+function coTxt(r,k){var v=coVal(r,k),u=CO[coIdx(k)][2];return v===null?"–":fmt(v)+(u&&u!=="anni"&&u!=="bpm"?" "+u:u?" "+u:"");}
+function coDate(r){var d=pd(r.d);return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]+" "+d.getFullYear()+" · "+r.h;}
+// legge il CSV esportato da Beurer HealthManager Pro (separatore ; e virgola o punto decimale)
+function coParseCSV(text){
+  var lines=String(text).replace(/^﻿/,"").split(/\r?\n/),hi=-1,i;
+  for(i=0;i<lines.length;i++){if(/^\s*data\s*;\s*ora\s*;/i.test(lines[i])){hi=i;break;}}
+  if(hi<0) throw new Error("Non è un export della bilancia: manca la riga Data;Ora;kg…");
+  var head=lines[hi].split(";").map(function(h){return h.trim().toLowerCase();});
+  var col=CO.map(function(c){return head.indexOf(c[3]);});
+  if(col[0]<0) throw new Error("Colonna del peso non trovata");
+  var di=head.indexOf("data"),oi=head.indexOf("ora"),rows=[];
+  for(i=hi+1;i<lines.length;i++){
+    var ln=lines[i];if(!ln.trim()) continue;
+    var f=ln.split(";");
+    var m=/^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(f[di]||""),t=/^\s*(\d{1,2}):(\d{2})/.exec(f[oi]||"");
+    if(!m||!t) continue;
+    var v=col.map(function(ci){
+      if(ci<0) return null;
+      var x=String(f[ci]===undefined?"":f[ci]).trim().replace(",",".");
+      if(x==="") return null;
+      var n=parseFloat(x);return isFinite(n)?n:null;
+    });
+    if(v[0]===null) continue;
+    rows.push({d:m[3]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[1]).slice(-2),h:("0"+t[1]).slice(-2)+":"+t[2],v:v});
+  }
+  return rows;
+}
+function coImport(file){
+  if(!file) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    var rows;
+    try{rows=coParseCSV(fr.result);}catch(e){setStatus(e.message);return;}
+    if(!rows.length){setStatus("Nel file non ho trovato misurazioni.");return;}
+    setStatus("Importo "+rows.length+" misurazioni…");
+    api("corpoImport",{rows:rows}).then(function(r){
+      var msg=r.nuove?("Importate "+r.nuove+" nuove misurazioni"+(r.saltate?" ("+r.saltate+" già presenti)":"")+"."):"Tutte già presenti, nessuna novità.";
+      return loadState().then(function(){setStatus(msg);});
+    }).catch(function(e){setStatus("Importazione non riuscita: "+e.message);});
+  };
+  fr.onerror=function(){setStatus("Non riesco a leggere il file.");};
+  fr.readAsText(file);
+}
+function coChart(k){
+  var pts=S.corpo.filter(function(r){return coVal(r,k)!==null;});
+  var unit=CO[coIdx(k)][2];
+  if(pts.length<2) return '<div class="empty" style="padding:18px 0">Serve una seconda misurazione per vedere l\'andamento.</div>';
+  var W=320,H=170,L=34,R=14,T=14,B=26;
+  var vals=pts.map(function(r){return coVal(r,k);});
+  var min=Math.min.apply(null,vals),max=Math.max.apply(null,vals);
+  if(max-min<1){min-=1;max+=1;}
+  var p_=(max-min)*0.15;min=Math.floor((min-p_)*2)/2;max=Math.ceil((max+p_)*2)/2;
+  function T_(r){return new Date(r.d+"T"+("0"+r.h).slice(-5)).getTime();}
+  var t0=T_(pts[0]),t1=T_(pts[pts.length-1]);
+  function X(i){var f=t1>t0?(T_(pts[i])-t0)/(t1-t0):i/(pts.length-1);return L+f*(W-L-R);}
+  function Y(v){return T+(1-(v-min)/(max-min))*(H-T-B);}
+  var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Andamento di '+esc(CO[coIdx(k)][1])+'">';
+  [min,(min+max)/2,max].forEach(function(v){
+    s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="1"/>';
+    s+='<text x="'+(L-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+fmt(v)+'</text>';
+  });
+  var xy=pts.map(function(r,i){return X(i).toFixed(1)+","+Y(vals[i]).toFixed(1);});
+  s+='<path d="M'+X(0).toFixed(1)+","+(H-B)+" L"+xy.join(" L")+" L"+X(pts.length-1).toFixed(1)+","+(H-B)+' Z" fill="var(--accent)" opacity=".13"/>';
+  s+='<polyline points="'+xy.join(" ")+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  pts.forEach(function(r,i){var last=i===pts.length-1;s+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(vals[i]).toFixed(1)+'" r="'+(last?5:3)+'" fill="'+(last?"var(--accent)":"var(--surface)")+'" stroke="var(--accent)" stroke-width="2"/>';});
+  s+='<text x="'+X(0)+'" y="'+(H-8)+'" font-size="10" fill="var(--muted)">'+dshort(pts[0].d)+'</text>';
+  s+='<text x="'+X(pts.length-1)+'" y="'+(H-8)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+dshort(pts[pts.length-1].d)+'</text>';
+  s+='<text x="'+X(pts.length-1)+'" y="'+(Y(vals[vals.length-1])-10)+'" text-anchor="end" font-size="11" font-weight="600" fill="var(--ink)">'+fmt(vals[vals.length-1])+(unit?" "+unit:"")+'</text>';
+  return s+'</svg>';
+}
+function renderCorpo(){
+  var el=$("v-co"),C=S.corpo;
+  var html='<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin:2px 0 12px"><button class="btn ghost small" type="button" data-co="back">‹ Indietro</button><b style="font:700 18px var(--font-display)">Corpo</b><button class="btn small" type="button" data-co="pick">Importa CSV</button></div>'+
+    '<input type="file" id="co-file" accept=".csv,text/csv,text/plain,.txt" hidden>';
+  if(!C.length){
+    el.innerHTML=html+'<div class="card"><b>Nessuna misurazione</b><div class="sub">Dalla app Beurer HealthManager Pro esporta le misurazioni in CSV, poi tocca <b>Importa CSV</b> e scegli il file. Le misure restano private: le vedi solo tu. Puoi reimportare lo stesso file quando vuoi, le misurazioni già presenti vengono saltate.</div></div>';
+    return;
+  }
+  var last=C[C.length-1],prev=C.length>1?C[C.length-2]:null;
+  function cell(k){
+    var v=coVal(last,k);if(v===null) return "";
+    var u=CO[coIdx(k)][2],pv=prev?coVal(prev,k):null,dl="";
+    if(pv!==null){var d=Math.round((v-pv)*10)/10;if(d!==0) dl='<i>'+(d>0?"▲":"▼")+" "+fmt(Math.abs(d))+'</i>';}
+    return '<div><span>'+esc(CO[coIdx(k)][1])+'</span><b>'+fmt(v)+(u?'<small style="font:500 12px var(--font-body);color:var(--muted)"> '+u+'</small>':"")+dl+'</b></div>';
+  }
+  html+='<div class="card"><div class="sub" style="margin:0">'+esc(coDate(last))+'</div>'+
+    '<div style="font:700 38px/1.1 var(--font-display);margin-top:4px">'+fmt(coVal(last,"kg"))+' <small style="font:500 16px var(--font-body);color:var(--muted)">kg</small></div>'+
+    '<div class="cogrid">'+["grasso","muscoli","acqua","ossa","imc","visc","eta_metab","bpm"].map(cell).join("")+'</div>'+(prev?'<div class="sub">Le frecce confrontano con la misurazione precedente.</div>':"")+'</div>';
+  var chips=[["kg","Peso"],["grasso","Grasso"],["muscoli","Muscoli"],["acqua","Acqua"],["visc","Visc."],["eta_metab","Età"],["soft_lean","Magra"]];
+  html+='<div class="card"><div class="cochips">'+chips.map(function(c){return '<button type="button" data-co="m:'+c[0]+'" class="'+(coMetric===c[0]?"on":"")+'">'+c[1]+'</button>';}).join("")+'</div>'+coChart(coMetric)+'</div>';
+  var seg=[["Braccio sx","bs"],["Braccio dx","bd"],["Gamba sx","gs"],["Gamba dx","gd"],["Tronco","tronco"]];
+  if(coVal(last,"musc_bs")!==null||coVal(last,"grasso_bs")!==null){
+    html+='<div class="card"><b>Per zona</b><table class="cotbl" style="margin-top:6px"><tr><th></th><th>Grasso %</th><th>Muscoli %</th></tr>'+seg.map(function(z){
+      var g=coVal(last,"grasso_"+z[1]),m=coVal(last,"musc_"+z[1]);
+      return '<tr><td>'+z[0]+'</td><td>'+(g===null?"–":fmt(g))+'</td><td>'+(m===null?"–":fmt(m))+'</td></tr>';}).join("")+'</table></div>';
+  }
+  html+='<div class="card"><b>Altri valori</b><table class="cotbl" style="margin-top:6px">'+["proteine","soft_lean","lean_body","massa_musc_organi"].map(function(k){
+    return '<tr><td>'+esc(CO[coIdx(k)][1])+'</td><td>'+coTxt(last,k)+'</td></tr>';}).join("")+'</table></div>';
+  html+='<details class="card"><summary style="cursor:pointer;font-weight:700">Storico ('+C.length+')</summary>'+C.slice().reverse().map(function(r){
+    var key=r.d+"|"+r.h;
+    return '<div class="feed"><div><div>'+esc(coDate(r))+'</div><div class="sub" style="margin:0">'+coTxt(r,"kg")+' · grasso '+coTxt(r,"grasso")+' · muscoli '+coTxt(r,"muscoli")+'</div></div><button class="btn ghost small" type="button" data-co="del:'+esc(key)+'">'+(coDel===key?"Sicuro?":"Elimina")+'</button></div>';}).join("")+'</details>';
+  var op=el.querySelector("details");var wasOpen=op&&op.open;
+  el.innerHTML=html;
+  if(wasOpen) el.querySelector("details").open=true;
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-co]");if(!b) return;
+  var a=b.dataset.co;
+  if(a==="back"){setTab("ex");return;}
+  if(a==="pick"){$("co-file").click();return;}
+  if(a.indexOf("m:")===0){coMetric=a.slice(2);renderCorpo();return;}
+  if(a.indexOf("del:")===0){
+    var key=a.slice(4);
+    if(coDel!==key){coDel=key;renderCorpo();return;}
+    coDel="";var p=key.split("|");
+    S.corpo=S.corpo.filter(function(r){return !(r.d===p[0]&&r.h===p[1]);});cacheSave();renderCorpo();
+    api("corpoDelete",{d:p[0],h:p[1]}).catch(function(x){setStatus("Non eliminata: "+x.message);loadState();});
+  }
+});
+document.addEventListener("change",function(e){
+  if(e.target&&e.target.id==="co-file"){var f=e.target.files&&e.target.files[0];e.target.value="";coImport(f);}
+});
+$("b-body").addEventListener("click",function(){setTab("co");});
+
 var tok=lsGet("dpc-token");
 if(tok){
   S.token=tok;
   try{
     var c=JSON.parse(lsGet("dpc-cache")||"null");
-    if(c){applyState({me:c.me,users:c.users,log:c.log,board:c.board});}
+    if(c){applyState({me:c.me,users:c.users,log:c.log,board:c.board,corpo:(c.corpo||[]).map(function(x){return [x.d,x.h,x.v];})});}
   }catch(e){}
   showApp();renderAll();
   loadState();
