@@ -2593,7 +2593,8 @@ function renderCorpo(){
   if(coVal(last,"musc_bs")!==null||coVal(last,"grasso_bs")!==null){
     html+='<div class="card"><b>Per zona</b><table class="cotbl" style="margin-top:6px"><tr><th></th><th>Grasso %</th><th>Muscoli %</th></tr>'+seg.map(function(z){
       var g=coVal(last,"grasso_"+z[1]),m=coVal(last,"musc_"+z[1]);
-      return '<tr><td>'+z[0]+'</td><td>'+(g===null?"–":fmt(g))+'</td><td>'+(m===null?"–":fmt(m))+'</td></tr>';}).join("")+'</table></div>';
+      function zd(k,v){var pv=prev?coVal(prev,k):null;if(v===null||pv===null) return "";var d=Math.round((v-pv)*10)/10;return d===0?"":' <small style="color:var(--muted)">'+(d>0?"▲":"▼")+fmt(Math.abs(d))+'</small>';}
+      return '<tr><td>'+z[0]+'</td><td>'+(g===null?"–":fmt(g))+zd("grasso_"+z[1],g)+'</td><td>'+(m===null?"–":fmt(m))+zd("musc_"+z[1],m)+'</td></tr>';}).join("")+'</table>'+(prev?'<div class="sub">Le frecce confrontano con la misurazione precedente.</div>':"")+'</div>';
   }
   html+='<div class="card"><b>Altri valori</b><table class="cotbl" style="margin-top:6px">'+["proteine","soft_lean","lean_body","massa_musc_organi"].map(function(k){
     return '<tr><td>'+esc(CO[coIdx(k)][1])+'</td><td>'+coTxt(last,k)+'</td></tr>';}).join("")+'</table></div>';
